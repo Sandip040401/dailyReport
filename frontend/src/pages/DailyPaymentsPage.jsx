@@ -1,9 +1,18 @@
 // src/pages/DailyPaymentsPage.jsx
 
 import React, { useState, useEffect } from "react";
-import { Trash2, AlertCircle, Check, Save, ChevronLeft, ChevronRight, Calendar, Loader2 } from "lucide-react";
+import {
+  Trash2,
+  AlertCircle,
+  Check,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import { paymentAPI, partyAPI } from "../lib/api";
-import { getWeekStart, getWeekEnd, formatWeekRange } from '../utils/dateUtils';
+import { getWeekStart, getWeekEnd, formatWeekRange } from "../utils/dateUtils";
 
 export default function DailyPaymentsPage() {
   const [allPayments, setAllPayments] = useState({});
@@ -15,7 +24,9 @@ export default function DailyPaymentsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekStart(new Date()));
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() =>
+    getWeekStart(new Date())
+  );
   const selectedWeekEnd = getWeekEnd(selectedWeekStart);
 
   const [selectedParties, setSelectedParties] = useState([]);
@@ -43,7 +54,7 @@ export default function DailyPaymentsPage() {
     for (let i = 0; i < 7; i++) {
       const date = new Date(start);
       date.setDate(start.getDate() + i);
-      dateArray.push(date.toISOString().split('T')[0]);
+      dateArray.push(date.toISOString().split("T")[0]);
     }
     return dateArray;
   };
@@ -160,13 +171,13 @@ export default function DailyPaymentsPage() {
   const goToPreviousWeek = () => {
     const d = new Date(selectedWeekStart);
     d.setDate(d.getDate() - 7);
-    setSelectedWeekStart(d.toISOString().split('T')[0]);
+    setSelectedWeekStart(d.toISOString().split("T")[0]);
   };
 
   const goToNextWeek = () => {
     const d = new Date(selectedWeekStart);
     d.setDate(d.getDate() + 7);
-    setSelectedWeekStart(d.toISOString().split('T')[0]);
+    setSelectedWeekStart(d.toISOString().split("T")[0]);
   };
 
   const goToCurrentWeek = () => {
@@ -590,7 +601,9 @@ export default function DailyPaymentsPage() {
               </div>
               <div className="ml-3 flex-1">
                 <h3 className="text-sm font-bold text-blue-900">Loading</h3>
-                <p className="mt-1 text-sm text-blue-700">Fetching payment data...</p>
+                <p className="mt-1 text-sm text-blue-700">
+                  Fetching payment data...
+                </p>
               </div>
             </div>
             <div className="h-1 bg-blue-500">
@@ -608,7 +621,9 @@ export default function DailyPaymentsPage() {
               </div>
               <div className="ml-3 flex-1">
                 <h3 className="text-sm font-bold text-purple-900">Saving</h3>
-                <p className="mt-1 text-sm text-purple-700">Saving payment records...</p>
+                <p className="mt-1 text-sm text-purple-700">
+                  Saving payment records...
+                </p>
               </div>
             </div>
             <div className="h-1 bg-purple-500">
@@ -666,39 +681,45 @@ export default function DailyPaymentsPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-purple-200">
               <p className="text-sm text-purple-600 font-medium">
-                📌 All payments will be recorded for this 7-day period (Monday to Sunday). Always 7 days selected.
+                📌 All payments will be recorded for this 7-day period (Monday
+                to Sunday). Always 7 days selected.
               </p>
             </div>
           </div>
 
-          {/* Save Button */}
-          {(Object.keys(modifiedPayments).length > 0 ||
-            Object.keys(weeklyNPData).length > 0) && (
-            <div className="mb-6 flex justify-center">
-              <button
-                onClick={handleSaveAll}
-                disabled={saving}
-                className="flex items-center space-x-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-400 text-white rounded-lg font-semibold transition-colors shadow-lg"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    <span>
-                      Save All (
-                      {Object.keys(modifiedPayments).length +
-                        Object.keys(weeklyNPData).length}
-                      )
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          {/* Save Button - Fixed Right Side, Always Visible */}
+          <div className="fixed top-4 right-6 z-50">
+            <button
+              onClick={handleSaveAll}
+              disabled={
+                saving ||
+                (Object.keys(modifiedPayments).length === 0 &&
+                  Object.keys(weeklyNPData).length === 0)
+              }
+              className="flex items-center space-x-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-lg"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>
+                    Save All{" "}
+                    {Object.keys(modifiedPayments).length +
+                      Object.keys(weeklyNPData).length >
+                      0 &&
+                      `(${
+                        Object.keys(modifiedPayments).length +
+                        Object.keys(weeklyNPData).length
+                      })`}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Party Selection */}
           <div>
@@ -731,7 +752,9 @@ export default function DailyPaymentsPage() {
             {loading ? (
               <div className="p-12 text-center">
                 <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mx-auto" />
-                <p className="mt-4 text-gray-600 font-medium">Loading payment data...</p>
+                <p className="mt-4 text-gray-600 font-medium">
+                  Loading payment data...
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
