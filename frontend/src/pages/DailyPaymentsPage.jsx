@@ -529,6 +529,7 @@ export default function DailyPaymentsPage() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             autoFocus
+            onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
             className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
           />
         ) : (
@@ -958,6 +959,7 @@ export default function DailyPaymentsPage() {
                             <td className="border border-gray-200 px-4 py-2 text-right cursor-pointer">
                               <input
                                 type="number"
+                                onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
                                 value={weeklyNPData[partyId]?.amount ?? ""}
                                 onChange={(e) => {
                                   const raw = e.target.value;

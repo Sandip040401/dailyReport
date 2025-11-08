@@ -913,6 +913,10 @@ export default function MultiDayPaymentsPage() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             autoFocus
+            onWheel={(e) => {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }}
             className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
           />
         ) : (
@@ -1256,6 +1260,8 @@ export default function MultiDayPaymentsPage() {
                             <td className="border border-gray-200 px-4 py-2 text-right">
                               <input
                                 type="number"
+                                onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
+
                                 value={weeklyNPByParty[partyId]?.amount ?? ""}
                                 onChange={(e) =>
                                   setWeeklyNPByParty((prev) => ({
