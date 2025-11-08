@@ -62,13 +62,13 @@ export const Register = async (req, res) => {
 
 export const getRole = async (req, res) => {
   try {
-    const id = req.params.userId
+    const id = req.query.userId
     const user = await User.findById(id)
     if(user){
       res.status(200).json({role:user.role})
     }
   } catch (error) {
-        console.error("Registration error:", error);
+        // console.error("Registration error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 }

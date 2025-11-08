@@ -12,9 +12,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
   useEffect(() => {
     const fetchRole = async () => {
       const token = localStorage.getItem("payment-token");
+      console.log(token);
+      
       if (!token) return "employee";
       const role = await authAPI.role(token);
-      setUserRole(role);
+      setUserRole(role.role);
     };
 
     fetchRole();

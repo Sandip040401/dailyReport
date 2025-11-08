@@ -13,9 +13,8 @@ export const protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+    
+    req.user = await User.findById(token).select('-password');
     
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'User not found' });
