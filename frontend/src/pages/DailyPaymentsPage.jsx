@@ -737,7 +737,7 @@ export default function DailyPaymentsPage() {
                       : "bg-white text-gray-700 border-2 border-gray-200 hover:border-emerald-400 hover:bg-gray-50"
                   }`}
                 >
-                  {party.partyName}
+                  {party.partyCode}
                 </button>
               ))}
             </div>
@@ -761,9 +761,9 @@ export default function DailyPaymentsPage() {
                 <table className="w-full border-collapse">
                   <tbody>
                     {selectedParties.map((partyId, partyIndex) => {
-                      const partyName = parties.find(
+                      const partyCode = parties.find(
                         (p) => p._id === partyId
-                      )?.partyName;
+                      )?.partyCode;
                       const payments = getMergedPayments(partyId);
                       const totals = totalsByParty[partyId];
 
@@ -853,7 +853,7 @@ export default function DailyPaymentsPage() {
                                 </td>
                                 <td className="border border-gray-200 px-4 py-2">
                                   <span className="text-sm font-bold text-gray-900">
-                                    {partyName}
+                                    {partyCode}
                                   </span>
                                 </td>
 

@@ -1006,7 +1006,7 @@ export default function MultiDayPaymentsPage() {
                       : "bg-white text-gray-700 border-2 border-gray-200 hover:border-emerald-400 hover:bg-gray-50"
                   }`}
                 >
-                  {party.partyName}
+                  {party.partyCode}
                 </button>
               ))}
             </div>
@@ -1024,9 +1024,9 @@ export default function MultiDayPaymentsPage() {
                 <table className="w-full border-collapse">
                   <tbody>
                     {selectedParties.map((partyId, pIndex) => {
-                      const partyName = parties.find(
+                      const partyCode = parties.find(
                         (p) => p._id === partyId
-                      )?.partyName;
+                      )?.partyCode;
                       const rows = rowsByParty[partyId] || [];
                       const totals = totalsByParty[partyId] || {
                         amount: 0,
@@ -1180,7 +1180,7 @@ export default function MultiDayPaymentsPage() {
 
                                 <td className="border border-gray-200 px-4 py-2">
                                   <span className="text-sm font-bold text-gray-900">
-                                    {partyName}
+                                    {partyCode}
                                   </span>
                                 </td>
 
@@ -1223,7 +1223,7 @@ export default function MultiDayPaymentsPage() {
                                 className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded"
                               >
                                 <Plus className="w-4 h-4" />
-                                <span>Add Row for {partyName}</span>
+                                <span>Add Row for {partyCode}</span>
                               </button>
                             </td>
                           </tr>
