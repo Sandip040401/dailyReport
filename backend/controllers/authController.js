@@ -20,12 +20,8 @@ export const Login = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
     }
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      "your_jwt_secret",
-      { expiresIn: "7d" }
-    );
-    res.status(200).json({ success: true, token });
+
+    res.status(200).json({ success: true, userId:user._id });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -62,3 +58,17 @@ export const Register = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+export const getRole = async (req, res) => {
+  try {
+    const id = req.params.userId
+    const user = await User.findById(id)
+    if(user){
+      res.status(200).json({role:user.role})
+    }
+  } catch (error) {
+        console.error("Registration error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}

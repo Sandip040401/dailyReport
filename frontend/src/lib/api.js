@@ -93,6 +93,7 @@ export const bankColorAPI = {
 
 export const authAPI = {
   login: (credentials) => apiClient.post('/auth/login', credentials),
+  role: (id) => apiClient.get('/auth/role',{params:{userId:id} })
 };
 
 export default apiClient;

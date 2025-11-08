@@ -33,7 +33,7 @@ export default function Login() {
       }
 
       // Store token
-      localStorage.setItem('payment-token', response.token);
+      localStorage.setItem('payment-token', response.userId);
 
       // Redirect to dashboard
       navigate('/user');
