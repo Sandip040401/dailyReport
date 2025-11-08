@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
 import React, { useState } from 'react';
-import { Menu, X, LogOut, Settings, Home, Users, BarChart3, AlertCircle } from 'lucide-react';
+import { Menu, X,BookMinus, LogOut, Settings, Home, Users, BarChart3, AlertCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
@@ -19,7 +19,8 @@ export default function Layout({ children }) {
     { path: '/daily-payments', label: 'Daily Payments', icon: BarChart3 },
     { path: '/multi-day-payments', label: 'Multi-Day Payments', icon: AlertCircle },
     { path: '/expenses', label: 'Expenses', icon: AlertCircle },
-    { path: '/parties', label: 'Parties', icon: Users }
+    { path: '/parties', label: 'Parties', icon: Users },
+    { path: '/reports', label: 'Reports', icon: BookMinus }
   ];
 
   return (

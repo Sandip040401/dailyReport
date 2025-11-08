@@ -8,6 +8,7 @@ import MultiDayPaymentsPage from "./pages/MultiDayPaymentsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import PartiesPage from "./pages/PartiesPage";
 import Login from "./pages/Login";
+import { Report } from "./pages/Report";
 
 // Protected Route Wrapper
 function ProtectedLayout() {
@@ -38,6 +39,7 @@ function App() {
           <Route path="/multi-day-payments" element={<MultiDayPaymentsPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/parties" element={<PartiesPage />} />
+          <Route path="/reports" element={<Report />} />
         </Route>
       </Routes>
     </Router>
