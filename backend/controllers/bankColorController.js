@@ -1,41 +1,13 @@
 // controllers/bankColorController.js
 import WeeklyPayment from '../models/WeeklyPayment.js';
 import MultiDayPayment from '../models/MultiDayPayment.js';
+import mongoose from 'mongoose';
 
 /**
- * Helper function to get ISO week number and year from a date
- * ISO week starts on Monday
- */
-const getISOWeekInfo = (date) => {
-  const targetDate = new Date(date);
-  
-  // Set to nearest Thursday (current date + 4 - current day number)
-  // Make Sunday's day number 7
-  const dayNum = targetDate.getUTCDay() || 7;
-  targetDate.setUTCDate(targetDate.getUTCDate() + 4 - dayNum);
-  
-  // Get first day of year
-  const yearStart = new Date(Date.UTC(targetDate.getUTCFullYear(), 0, 1));
-  
-  // Calculate full weeks to nearest Thursday
-  const weekNumber = Math.ceil((((targetDate - yearStart) / 86400000) + 1) / 7);
-  
-  return {
-    weekNumber,
-    weekYear: targetDate.getUTCFullYear()
-  };
-};
-
-/**
- * Parse date range string like "2025-11-03 – 2025-11-06"
- * Returns { startDate, endDate } as Date objects
- */
-/**
- * Parse date range string like "2025-11-03 – 2025-11-09"
- * Returns { startDate, endDate } as Date objects
+ * Parse date range string like "2025-11-03 – 2025-11-05"
+ * Returns { startDate, endDate } as string format YYYY-MM-DD
  */
 const parseDateRange = (rangeString) => {
-  // Extract all date patterns (YYYY-MM-DD)
   const datePattern = /\d{4}-\d{2}-\d{2}/g;
   const dates = rangeString.match(datePattern);
   
@@ -46,8 +18,8 @@ const parseDateRange = (rangeString) => {
   }
   
   return {
-    startDate: new Date(dates[0]),
-    endDate: new Date(dates[1])
+    startDate: dates[0], // Return as string
+    endDate: dates[1]    // Return as string
   };
 };
 
@@ -67,7 +39,7 @@ const datesMatch = (date1, date2) => {
 export const updateBankColor = async (req, res) => {
   try {
     const { partyId, paymentDate, color, isPartyTotal, paymentType } = req.body;
-
+    
     // Validate required fields
     if (!partyId) {
       return res.status(400).json({ success: false, message: 'partyId is required' });
@@ -76,9 +48,10 @@ export const updateBankColor = async (req, res) => {
     if (!['red', 'green'].includes(color)) {
       return res.status(400).json({ success: false, message: 'Invalid color. Must be "red" or "green"' });
     }
+    
+    const partyObjectId = new mongoose.Types.ObjectId(partyId);
 
     let updatedDoc;
-    let weekNumber, weekYear;
 
     // Handle different payment types
     if (paymentType === 'range') {
@@ -90,32 +63,38 @@ export const updateBankColor = async (req, res) => {
         });
       }
 
-      // Calculate week info from payment date range (use start date)
-      let referenceDate;
+      let multiDayDoc;
+
       if (isPartyTotal) {
-        // For party total, use current date to find the week
-        referenceDate = new Date().toISOString().split('T')[0];
+        // For party total, get the most recent document
+        multiDayDoc = await MultiDayPayment.findOne({
+          party: partyObjectId
+        }).sort({ createdAt: -1 });
       } else {
-        // Parse the date range and use start date
-        const { startDate } = parseDateRange(paymentDate);
-        referenceDate = startDate.toISOString().split('T')[0];
+        // Parse the date range to get string dates
+        const { startDate, endDate } = parseDateRange(paymentDate);
+        
+        // Create Date objects for querying (start of day)
+        const startDateObj = new Date(startDate + 'T00:00:00.000Z');
+        const endDateObj = new Date(endDate + 'T00:00:00.000Z');
+        
+        // Query to find document with matching date range in paymentRanges array
+        multiDayDoc = await MultiDayPayment.findOne({
+          party: partyObjectId,
+          paymentRanges: {
+            $elemMatch: {
+              startDate: startDateObj,
+              endDate: endDateObj
+            }
+          }
+        });
       }
-
-      const weekInfo = getISOWeekInfo(referenceDate);
-      weekNumber = weekInfo.weekNumber;
-      weekYear = weekInfo.weekYear;
-
-      const multiDayDoc = await MultiDayPayment.findOne({
-        party: partyId,
-        weekNumber,
-        weekYear,
-      });
 
       if (!multiDayDoc) {
         return res.status(404).json({ 
           success: false, 
           message: 'MultiDayPayment not found',
-          debug: { partyId, weekNumber, weekYear }
+          debug: { partyId, paymentDate }
         });
       }
 
@@ -123,12 +102,15 @@ export const updateBankColor = async (req, res) => {
         // Update party total bank color
         multiDayDoc.partyTotalBankColor = color;
       } else {
-        // Find the matching payment range by comparing start and end dates
+        // Parse again for comparison
         const { startDate, endDate } = parseDateRange(paymentDate);
+        const startDateObj = new Date(startDate + 'T00:00:00.000Z');
+        const endDateObj = new Date(endDate + 'T00:00:00.000Z');
         
+        // Find the matching payment range
         const rangeIndex = multiDayDoc.paymentRanges.findIndex(range => 
-          datesMatch(range.startDate, startDate) && 
-          datesMatch(range.endDate, endDate)
+          datesMatch(range.startDate, startDateObj) && 
+          datesMatch(range.endDate, endDateObj)
         );
 
         if (rangeIndex === -1) {
@@ -154,8 +136,6 @@ export const updateBankColor = async (req, res) => {
     } else if (paymentType === 'daily' || paymentType === 'weekly') {
       // DAILY/WEEKLY PAYMENT (both use WeeklyPayment model)
       
-      // For individual payment, calculate week from paymentDate
-      // For party total, we need a reference date (use current date or first available payment)
       if (!isPartyTotal && !paymentDate) {
         return res.status(400).json({ 
           success: false, 
@@ -163,23 +143,27 @@ export const updateBankColor = async (req, res) => {
         });
       }
 
-      // Calculate week info from payment date (or use current date for party total)
-      const referenceDate = paymentDate || new Date().toISOString().split('T')[0];
-      const weekInfo = getISOWeekInfo(referenceDate);
-      weekNumber = weekInfo.weekNumber;
-      weekYear = weekInfo.weekYear;
-
-      const weeklyDoc = await WeeklyPayment.findOne({
-        party: partyId,
-        weekNumber,
-        weekYear,
-      });
+      // Query by date in payments Map using dot notation
+      let weeklyDoc;
+      
+      if (isPartyTotal) {
+        // For party total, just get the most recent document for this party
+        weeklyDoc = await WeeklyPayment.findOne({
+          party: partyObjectId
+        }).sort({ createdAt: -1 });
+      } else {
+        // Find document where this specific date exists in payments Map
+        weeklyDoc = await WeeklyPayment.findOne({
+          party: partyObjectId,
+          [`payments.${paymentDate}`]: { $exists: true }
+        });
+      }
 
       if (!weeklyDoc) {
         return res.status(404).json({ 
           success: false, 
-          message: 'WeeklyPayment not found',
-          debug: { partyId, weekNumber, weekYear, referenceDate }
+          message: 'WeeklyPayment not found for this date',
+          debug: { partyId, paymentDate }
         });
       }
 

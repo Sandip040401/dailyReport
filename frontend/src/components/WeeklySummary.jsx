@@ -158,7 +158,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
   const weekYear = data?.weekYear;
 
   const dateColWidth = "w-[120px] min-w-[120px] max-w-[120px]";
-  const partyColWidth = "w-[140px] min-w-[140px] max-w-[140px]";
+  const partyColWidth = "w-[120px] min-w-[120px] max-w-[120px]";
   const numColWidth = "w-[120px] min-w-[120px]";
   const cellBase =
     "px-4 py-3 border-b border-gray-200 align-middle transition-colors duration-150";
@@ -357,11 +357,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     >
                       <div className="flex flex-col">
                         <span className="text-base font-semibold text-gray-900">
-                          {party.partyName}
+                          {party.partyCode}
                         </span>
-                        {party.partyCode && (
+                        {party.partyName && (
                           <span className="text-xs text-gray-500 mt-0.5 font-mono">
-                            Code: {party.partyCode}
+                            {party.partyName}
                           </span>
                         )}
                       </div>
@@ -495,7 +495,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   style={{ left: 120 }}
                 >
                   <span className="text-base font-bold text-emerald-700">
-                    {party.partyName} Total
+                    {party.partyCode} Total
                   </span>
                 </td>
                 <td

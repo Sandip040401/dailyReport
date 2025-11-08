@@ -36,8 +36,6 @@ export default function Index() {
           expenseAPI.getExpenses({ startDate: toISO(weekStart), endDate: toISO(weekEnd) })
         ]);
         
-        console.log('Payments Response:', paymentsRes);
-        console.log('Expenses Response:', expensesRes);
 
         if (!cancelled) {
           if (paymentsRes?.success) {
@@ -76,7 +74,7 @@ export default function Index() {
     <div className="min-h-screen bg-gray-50">
       {/* Sticky header */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             {/* Title */}
             <div className="flex items-center space-x-3">
