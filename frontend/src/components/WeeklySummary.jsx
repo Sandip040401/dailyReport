@@ -1,22 +1,41 @@
 // src/components/WeeklySummary.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { authAPI, bankColorAPI } from "../lib/api";
+import Loader from "./Loader";
 
 const num = (v) => (v ?? 0).toLocaleString();
 
 export default function WeeklySummary({ data, expenses = [] }) {
   const [bankCellColors, setBankCellColors] = useState({});
   const [userRole, setUserRole] = useState("employee");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading user data...");
+  const [updatingKey, setUpdatingKey] = useState(null);
 
   // Decode token and set role
   useEffect(() => {
     const fetchRole = async () => {
+      setIsLoading(true);
+      setLoadingMessage("Authenticating user...");
+      
       const token = localStorage.getItem("payment-token");
       console.log(token);
       
-      if (!token) return "employee";
-      const role = await authAPI.role(token);
-      setUserRole(role.role);
+      if (!token) {
+        setUserRole("employee");
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const role = await authAPI.role(token);
+        setUserRole(role.role);
+      } catch (error) {
+        console.error("Error fetching role:", error);
+        setUserRole("employee");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchRole();
@@ -26,6 +45,8 @@ export default function WeeklySummary({ data, expenses = [] }) {
   useEffect(() => {
     if (!data?.parties) return;
 
+    setLoadingMessage("Loading bank colors...");
+    
     const initialColors = {};
     data.parties.forEach((party) => {
       party.payments.forEach((payment, idx) => {
@@ -50,12 +71,13 @@ export default function WeeklySummary({ data, expenses = [] }) {
     isPartyTotal,
     paymentType
   ) => {
-    if (userRole !== "admin") return;
+    if (userRole !== "admin" || updatingKey) return;
 
     const currentColor = bankCellColors[key] || "red";
     const newColor = currentColor === "red" ? "green" : "red";
 
-    // Optimistic update
+    // Optimistic update with loading state
+    setUpdatingKey(key);
     setBankCellColors((prev) => ({ ...prev, [key]: newColor }));
 
     try {
@@ -69,8 +91,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
         paymentType: paymentType || "weekly",
       });
     } catch (error) {
+      console.error("Error updating bank color:", error);
       // Revert on error
       setBankCellColors((prev) => ({ ...prev, [key]: currentColor }));
+    } finally {
+      setUpdatingKey(null);
     }
   };
 
@@ -180,6 +205,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
     return "bg-white hover:bg-gray-50";
   };
 
+  // Show loader while fetching initial data
+  if (isLoading) {
+    return <Loader message={loadingMessage} />;
+  }
+
   if (
     parties.length === 0 &&
     (!Array.isArray(expenses) || expenses.length === 0)
@@ -238,7 +268,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
             <th
               className={`${cellBase} ${cellLeft} sticky top-0 z-30 ${dateColWidth} ${stickyBase} border-b-2 border-gray-400 font-bold text-base py-4`}
             >
-              <div className="flex items中心 gap-2">
+              <div className="flex items-center gap-2">
                 <svg
                   className="w-5 h-5 text-gray-600"
                   fill="none"
@@ -382,6 +412,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                       style={getBankCellStyle(bankCellKey, payment.bank)}
                       onClick={() =>
                         payment.bank > 0 &&
+                        !updatingKey &&
                         toggleBankColor(
                           bankCellKey,
                           party.partyId,
@@ -400,9 +431,18 @@ export default function WeeklySummary({ data, expenses = [] }) {
                           : ""
                       }
                     >
-                      <span className="text-gray-900 font-semibold">
-                        {num(payment.bank)}
-                      </span>
+                      {updatingKey === bankCellKey ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                          <span className="text-gray-900 font-semibold">
+                            {num(payment.bank)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-900 font-semibold">
+                          {num(payment.bank)}
+                        </span>
+                      )}
                     </td>
                     <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
                       <span className="text-gray-900">{num(payment.due)}</span>
