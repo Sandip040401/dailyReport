@@ -184,7 +184,7 @@ const WeekRangeSelector = ({ selectedWeekStart, onWeekChange }) => {
     <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <p className="text-sm font-bold text-purple-700 mb-2 uppercase tracking-wider">
+          <p className="text-md font-bold text-purple-700 mb-2 uppercase tracking-wider">
             Selected Week Range (7 Days - Monday to Sunday)
           </p>
           <div className="flex items-center gap-3">
@@ -220,7 +220,7 @@ const WeekRangeSelector = ({ selectedWeekStart, onWeekChange }) => {
         </div>
       </div>
       <div className="mt-4 pt-4 border-t border-purple-200">
-        <p className="text-sm text-purple-600 font-medium">
+        <p className="text-md text-purple-600 font-medium">
           📌 All entries will be recorded for this 7-day period (Monday to
           Sunday). Expense dates are limited to this week.
         </p>
@@ -917,11 +917,11 @@ export default function MultiDayPaymentsPage() {
               e.preventDefault();
               e.currentTarget.blur();
             }}
-            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
+            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
           />
         ) : (
           <span
-            className={`text-sm font-medium ${
+            className={`text-md font-medium ${
               displayValue ? "text-gray-900" : "text-gray-400"
             }`}
           >
@@ -996,7 +996,7 @@ export default function MultiDayPaymentsPage() {
           </div>
 
           <div>
-            <p className="text-sm font-bold text-gray-700 mb-4 uppercase tracking-wider">
+            <p className="text-md font-bold text-gray-700 mb-4 uppercase tracking-wider">
               Select Parties:
             </p>
             <div className="flex flex-wrap gap-3">
@@ -1124,7 +1124,7 @@ export default function MultiDayPaymentsPage() {
                                             startDate: e.target.value,
                                           })
                                         }
-                                        className="px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none"
+                                        className="px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none"
                                       />
                                       <span className="text-gray-500">→</span>
                                       <input
@@ -1137,7 +1137,7 @@ export default function MultiDayPaymentsPage() {
                                             endDate: e.target.value,
                                           })
                                         }
-                                        className="px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none"
+                                        className="px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none"
                                       />
                                       <button
                                         className="ml-2 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-xs"
@@ -1174,7 +1174,7 @@ export default function MultiDayPaymentsPage() {
                                       title="Set date range"
                                     >
                                       <Calendar className="w-4 h-4 text-emerald-600" />
-                                      <span className="text-sm font-semibold text-gray-900">
+                                      <span className="text-md font-semibold text-gray-900">
                                         {formatDate(row.startDate)} to{" "}
                                         {formatDate(row.endDate)}
                                       </span>
@@ -1183,7 +1183,7 @@ export default function MultiDayPaymentsPage() {
                                 </td>
 
                                 <td className="border border-gray-200 px-4 py-2">
-                                  <span className="text-sm font-bold text-gray-900">
+                                  <span className="text-md font-bold text-gray-900">
                                     {partyCode}
                                   </span>
                                 </td>
@@ -1200,7 +1200,7 @@ export default function MultiDayPaymentsPage() {
                                 )}
 
                                 <td className="border border-gray-200 px-4 py-2 text-right bg-gray-50">
-                                  <span className="text-sm font-bold text-gray-900">
+                                  <span className="text-md font-bold text-gray-900">
                                     {rowTotal.toLocaleString()}
                                   </span>
                                 </td>
@@ -1254,7 +1254,7 @@ export default function MultiDayPaymentsPage() {
                                   }))
                                 }
                                 placeholder="NP Name"
-                                className="w-full px-2 py-1 border-2 rounded text-sm text-black focus:outline-none border-gray-300 focus:border-emerald-500"
+                                className="w-full px-2 py-1 border-2 rounded text-md text-black focus:outline-none border-gray-300 focus:border-emerald-500"
                               />
                             </td>
                             <td className="border border-gray-200 px-4 py-2 text-right">
@@ -1276,7 +1276,7 @@ export default function MultiDayPaymentsPage() {
                                   }))
                                 }
                                 placeholder="NP Amount"
-                                className="w-full px-2 py-1 border-2 rounded text-sm text-black focus:outline-none text-right border-gray-300 focus:border-emerald-500"
+                                className="w-full px-2 py-1 border-2 rounded text-md text-black focus:outline-none text-right border-gray-300 focus:border-emerald-500"
                               />
                             </td>
                             <td
@@ -1288,10 +1288,10 @@ export default function MultiDayPaymentsPage() {
 
                           {/* Party Total Row */}
                           <tr className="bg-gradient-to-r from-emerald-50 to-emerald-25 border-t-2 border-b-2 border-emerald-400 font-bold">
-                            <td className="border border-gray-200 px-4 py-3 text-left text-sm text-gray-900">
+                            <td className="border border-gray-200 px-4 py-3 text-left text-md text-gray-900">
                               PARTY TOTAL
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-left text-sm text-emerald-700"></td>
+                            <td className="border border-gray-200 px-4 py-3 text-left text-md text-emerald-700"></td>
                             <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
                               {Number(
                                 totals.amountWithNP || 0
@@ -1337,7 +1337,7 @@ export default function MultiDayPaymentsPage() {
                     <tr className="bg-gradient-to-r from-blue-50 to-blue-25 border-t-2 border-blue-400 font-bold">
                       <td
                         colSpan="2"
-                        className="border border-gray-200 px-4 py-3 text-left text-sm text-blue-700"
+                        className="border border-gray-200 px-4 py-3 text-left text-md text-blue-700"
                       >
                         FINAL TOTAL
                       </td>

@@ -188,7 +188,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
   const cellBase =
     "px-4 py-3 border-b border-gray-200 align-middle transition-colors duration-150";
   const cellLeft = "text-left";
-  const cellRight = "text-right font-mono";
+  const cellRight = "text-right";
   const stickyBase = "sticky bg-white";
   const stickyDate = `${stickyBase} left-0 z-10 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]`;
   const stickyParty = `${stickyBase} z-20 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]`;
@@ -350,7 +350,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
             </th>
           </tr>
         </thead>
-        <tbody className="text-sm text-gray-900">
+        <tbody className="text-md font-semibold text-gray-900">
           {parties.map((party, partyIndex) => (
             <React.Fragment key={party.partyId || partyIndex}>
               {party.payments.map((payment, paymentIndex) => {

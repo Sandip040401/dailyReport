@@ -530,11 +530,11 @@ export default function DailyPaymentsPage() {
             onKeyDown={handleKeyDown}
             autoFocus
             onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
-            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-sm text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
+            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
           />
         ) : (
           <span
-            className={`text-sm font-medium ${
+            className={`text-md font-medium ${
               displayValue ? "text-gray-900" : "text-gray-400"
             }`}
           >
@@ -841,7 +841,7 @@ export default function DailyPaymentsPage() {
                                 }`}
                               >
                                 <td className="border border-gray-200 px-4 py-2">
-                                  <span className="text-sm font-semibold text-gray-900">
+                                  <span className="text-md font-semibold text-gray-900">
                                     {new Date(date).toLocaleDateString(
                                       "en-IN",
                                       {
@@ -872,7 +872,7 @@ export default function DailyPaymentsPage() {
 
                                 <td className="border border-gray-200 px-4 py-2 text-right bg-gray-50">
                                   <span
-                                    className={`text-sm font-bold ${
+                                    className={`text-md font-bold ${
                                       modifiedData
                                         ? "text-yellow-600"
                                         : "text-gray-900"
@@ -917,7 +917,7 @@ export default function DailyPaymentsPage() {
                             }
                           >
                             <td className="border border-gray-200 px-4 py-2">
-                              <span className="text-sm text-gray-400"></span>
+                              <span className="text-md text-gray-400"></span>
                             </td>
                             <td className="border border-gray-200 px-4 py-2 text-left cursor-pointer">
                               <input
@@ -953,7 +953,7 @@ export default function DailyPaymentsPage() {
                                   });
                                 }}
                                 placeholder="NP Name"
-                                className="w-full px-2 py-1 border-2 rounded text-sm text-black focus:outline-none border-gray-300 focus:border-emerald-500"
+                                className="w-full px-2 py-1 border-2 rounded text-md text-black focus:outline-none border-gray-300 focus:border-emerald-500"
                               />
                             </td>
                             <td className="border border-gray-200 px-4 py-2 text-right cursor-pointer">
@@ -994,7 +994,7 @@ export default function DailyPaymentsPage() {
                                   });
                                 }}
                                 placeholder="NP Amount"
-                                className="w-full px-2 py-1 border-2 rounded text-sm text-black focus:outline-none text-right border-gray-300 focus:border-emerald-500"
+                                className="w-full px-2 py-1 border-2 rounded text-md text-black focus:outline-none text-right border-gray-300 focus:border-emerald-500"
                               />
                             </td>
                             <td
