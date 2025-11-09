@@ -79,7 +79,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
     if (!amount || amount === 0) return {};
     const color = bankCellColors[key] || "red";
     return {
-      backgroundColor: color === "red" ? "#fee2e2" : "#d1fae5",
+      backgroundColor: color === "red" ? "#f73737ff" : "#50C878",
       cursor: userRole === "admin" ? "pointer" : "default",
       transition: "background-color 0.2s ease",
       opacity: userRole === "admin" ? 1 : 0.9,
