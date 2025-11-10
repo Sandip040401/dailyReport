@@ -18,13 +18,11 @@ export const bulkUpsertPayments = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid weekStartDate/weekEndDate" });
     }
 
-    // Week meta (override if provided)
     const weekYear = Number.isInteger(wkYrOverride) ? wkYrOverride : ws.getFullYear();
     const weekNumber = Number.isInteger(wkNumOverride)
       ? wkNumOverride
       : Math.ceil(((ws - new Date(weekYear, 0, 1)) / 86400000 + ws.getDay() + 1) / 7);
 
-    // Group by party
     const paymentsByParty = {};
 
     for (const p of payments) {
@@ -39,7 +37,6 @@ export const bulkUpsertPayments = async (req, res) => {
         };
       }
 
-      // Handle weeklyNP entries (no paymentRange)
       if (p.weeklyNP && typeof p.weeklyNP === 'object') {
         const { amount, name } = p.weeklyNP;
         if (typeof amount === 'number' && !Number.isNaN(amount)) {
@@ -48,22 +45,20 @@ export const bulkUpsertPayments = async (req, res) => {
         if (typeof name === 'string') {
           paymentsByParty[partyId].weeklyNP.name = name;
         }
-        continue; // Skip this entry, it's not a payment range
+        continue;
       }
 
-      // Handle payment range entries
       if (!Array.isArray(p.paymentRange) || p.paymentRange.length !== 2) {
-        continue; // Skip invalid payment ranges
+        continue;
       }
 
       const startDate = asDate(p.paymentRange[0]);
       const endDate = asDate(p.paymentRange[1]);
 
       if (!isValid(startDate) || !isValid(endDate) || startDate > endDate) {
-        continue; // Skip invalid date ranges
+        continue;
       }
 
-      // Build the payment range object
       const rangeEntry = {
         startDate,
         endDate,
@@ -78,16 +73,38 @@ export const bulkUpsertPayments = async (req, res) => {
       paymentsByParty[partyId].paymentRanges.push(rangeEntry);
     }
 
-    // Execute upserts for each party
+    // ✅ Execute upserts for each party
     const results = await Promise.all(
       Object.values(paymentsByParty).map(async ({ partyId, paymentRanges, weeklyNP }) => {
         const filter = { party: partyId, weekNumber, weekYear };
+        
+        // ✅ Fetch existing document to get current bankColorStatus values
+        const existingDoc = await MultiDayPayment.findOne(filter).lean();
+        
+        // ✅ Merge new data with existing bankColorStatus
+        const mergedRanges = paymentRanges.map(newRange => {
+          // Find matching existing range by comparing dates
+          const existingRange = existingDoc?.paymentRanges?.find(
+            r => r.startDate.getTime() === newRange.startDate.getTime() 
+              && r.endDate.getTime() === newRange.endDate.getTime()
+          );
+          
+          // Preserve bankColorStatus from database if it exists
+          if (existingRange?.bankColorStatus) {
+            return {
+              ...newRange,
+              bankColorStatus: existingRange.bankColorStatus
+            };
+          }
+          
+          return newRange;
+        });
         
         const update = {
           $set: {
             weekStartDate: ws,
             weekEndDate: we,
-            paymentRanges,
+            paymentRanges: mergedRanges, // ✅ Use merged ranges with preserved colors
             weeklyNP,
             updatedAt: new Date(),
           },
@@ -122,6 +139,7 @@ export const bulkUpsertPayments = async (req, res) => {
     });
   }
 };
+
 
 
 

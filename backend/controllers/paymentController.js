@@ -27,6 +27,20 @@ export const bulkUpsertPayments = async (req, res) => {
       ((start - new Date(weekYear, 0, 1)) / 86400000 + start.getDay() + 1) / 7
     );
 
+    // ✅ Fetch existing documents first to preserve bankColorStatus
+    const partyIds = [...new Set(payments.map(p => p.party || p.partyId).filter(Boolean))];
+    const existingDocs = await WeeklyPayment.find({
+      party: { $in: partyIds },
+      weekNumber,
+      weekYear,
+    }).lean();
+
+    // ✅ Create a map of existing docs by partyId
+    const existingByParty = {};
+    for (const doc of existingDocs) {
+      existingByParty[doc.party.toString()] = doc;
+    }
+
     // Build updates per party
     const updatesByParty = {};
 
@@ -75,6 +89,14 @@ export const bulkUpsertPayments = async (req, res) => {
         }
       }
 
+      // ✅ Preserve existing bankColorStatus if it exists
+      const existingDoc = existingByParty[partyId];
+      const existingPayment = existingDoc?.payments?.get?.(dateKey) || existingDoc?.payments?.[dateKey];
+      
+      if (existingPayment?.bankColorStatus) {
+        setMap[`payments.${dateKey}.bankColorStatus`] = existingPayment.bankColorStatus;
+      }
+
       // Weekly NP as dot paths (no parent in $set)
       if (p.weeklyNP && typeof p.weeklyNP === "object") {
         const { amount, name } = p.weeklyNP;
@@ -108,6 +130,7 @@ export const bulkUpsertPayments = async (req, res) => {
     });
   }
 };
+
 
 export const getWeeklyPayments = async (req, res) => {
   try {
