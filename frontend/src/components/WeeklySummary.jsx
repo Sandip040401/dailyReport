@@ -527,7 +527,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   className={`${dateCell} ${cellLeft} ${stickyDate} border-t-2 border-emerald-300 w-16 sm:w-20`}
                 >
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[9px] md:text-[10px] font-bold break-words">
-                    TOTAL
+                    PARTY TOTAL
                   </span>
                 </td>
                 <td
@@ -609,7 +609,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                 className={`${dateCell} ${cellLeft} ${stickyDate} border-t-4 border-blue-500 w-16 sm:w-20`}
               >
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[9px] md:text-[10px] font-bold break-words">
-                  GRAND
+                  GRAND TOTAL
                 </span>
               </td>
               <td
@@ -617,7 +617,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                 style={{ left: "var(--date-column-width, auto)" }}
               >
                 <span className="font-bold text-blue-800 truncate max-w-[80px] sm:max-w-[96px] block">
-                  All
+                  -
                 </span>
               </td>
               <td
@@ -697,7 +697,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                         )}
                       </span>
                       <span className="text-[9px] sm:text-[10px] text-red-600 mt-0.5 font-medium uppercase tracking-wide break-words">
-                        EXP
+                        EXPENSE
                       </span>
                     </div>
                   </td>
@@ -749,7 +749,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   className={`${dateCell} ${cellLeft} ${stickyDate} border-t-2 border-red-300 w-16 sm:w-20`}
                 >
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-red-600 text-white text-[9px] md:text-[10px] font-bold break-words">
-                    EXP
+                    EXPENSE TOTAL
                   </span>
                 </td>
                 <td
@@ -757,7 +757,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   style={{ left: "var(--date-column-width, auto)" }}
                 >
                   <span className="font-bold text-red-700 truncate max-w-[80px] sm:max-w-[96px] block">
-                    Tot Exp
+                    -
                   </span>
                 </td>
                 <td
@@ -804,7 +804,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   className={`${dateCell} ${cellLeft} ${stickyDate} border-t-4 border-green-500 w-16 sm:w-20`}
                 >
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-green-600 text-white text-[9px] md:text-[10px] font-bold break-words">
-                    FINAL
+                    FINAL CASH
                   </span>
                 </td>
                 <td
@@ -812,7 +812,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   style={{ left: "var(--date-column-width, auto)" }}
                 >
                   <span className="font-bold text-green-800 truncate max-w-[80px] sm:max-w-[96px] block">
-                    After
+                    -
                   </span>
                 </td>
                 <td

@@ -1,11 +1,30 @@
 // src/components/Layout.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, X, BookMinus, LogOut, Settings, Home, Users, BarChart3, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
+
 export default function Layout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Handle responsive sidebar state
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('payment-token');
@@ -29,7 +48,7 @@ export default function Layout({ children }) {
       <aside
         className={`bg-white border-r border-gray-200 shadow-lg flex-shrink-0 transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'}
-          fixed lg:relative inset-y-0 left-0 z-40
+          fixed lg:relative inset-y-0 left-0 z-60
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         style={{ willChange: 'width, transform' }}
       >
@@ -162,7 +181,7 @@ export default function Layout({ children }) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0  z-30 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
