@@ -1,24 +1,31 @@
 // src/pages/Report.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculator, Receipt, Coins, Calendar } from 'lucide-react';
+import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculator, Receipt, Coins } from 'lucide-react';
 import { dashboardAPI, expenseAPI } from '../lib/api';
 import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
+
 
 const toISO = (d) => d.toISOString().slice(0, 10);
 const num = (v) => (v ?? 0).toLocaleString();
 
+
 export const Report = () => {
-  // UPDATED: Always use current date - locked to current week only
-  const today = new Date();
+  const [pickedDate, setPickedDate] = useState(new Date());
   const { weekStart, weekEnd } = useMemo(
-    () => getIsoWeekBoundsFromDate(today),
-    [] // Empty dependency - calculate once on mount
+    () => getIsoWeekBoundsFromDate(pickedDate),
+    [pickedDate]
   );
-  
   const [weeklyData, setWeeklyData] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  console.log('=== REPORT COMPONENT RENDER ===');
+  console.log('Picked Date:', pickedDate);
+  console.log('Week Start:', weekStart);
+  console.log('Week End:', weekEnd);
+  console.log('Week Start ISO:', toISO(weekStart));
+  console.log('Week End ISO:', toISO(weekEnd));
 
   useEffect(() => {
     let cancelled = false;
@@ -26,14 +33,107 @@ export const Report = () => {
       try {
         setLoading(true);
         setError('');
+        
+        console.log('\n=== FETCHING DATA ===');
+        console.log('Start Date:', toISO(weekStart));
+        console.log('End Date:', toISO(weekEnd));
+
         const [paymentsRes, expensesRes] = await Promise.all([
           dashboardAPI.getRangeSummary(toISO(weekStart), toISO(weekEnd)),
           expenseAPI.getExpenses({ startDate: toISO(weekStart), endDate: toISO(weekEnd) }),
         ]);
+
+        console.log('\n=== RAW API RESPONSES ===');
+        console.log('Payments Response:', JSON.stringify(paymentsRes, null, 2));
+        console.log('Expenses Response:', JSON.stringify(expensesRes, null, 2));
+
         if (cancelled) return;
-        setWeeklyData(paymentsRes?.success ? paymentsRes : { parties: [] });
+
+        // Filter payments by date like Index.jsx
+        if (paymentsRes?.success) {
+          console.log('\n=== FILTERING PAYMENTS ===');
+          console.log('Total Parties Before Filter:', paymentsRes.parties?.length);
+
+          const weekStartDate = new Date(weekStart);
+          const weekEndDate = new Date(weekEnd);
+          
+          console.log('Filter Range Start:', weekStartDate.toISOString());
+          console.log('Filter Range End:', weekEndDate.toISOString());
+
+          const filteredData = {
+            ...paymentsRes,
+            parties: paymentsRes.parties?.map((party, partyIndex) => {
+              console.log(`\n--- Party ${partyIndex + 1}: ${party.partyCode} ---`);
+              console.log('Total Payments:', party.payments?.length || 0);
+
+              const filteredPayments = party.payments
+                ?.filter((payment, paymentIndex) => {
+                  if (!payment.date) {
+                    console.log(`  Payment ${paymentIndex + 1}: NO DATE - EXCLUDED`);
+                    return false;
+                  }
+
+                  const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
+                  const paymentDate = new Date(dates[0]);
+                  
+                  const isInRange = paymentDate >= weekStartDate && paymentDate <= weekEndDate;
+                  
+                  console.log(`  Payment ${paymentIndex + 1}:`);
+                  console.log(`    Original Date: ${payment.date}`);
+                  console.log(`    Parsed Date: ${paymentDate.toISOString()}`);
+                  console.log(`    Amount: ${payment.paymentAmount}`);
+                  console.log(`    In Range: ${isInRange}`);
+
+                  return isInRange;
+                })
+                .sort((a, b) => {
+                  const dateA = new Date(a.date?.split(/\s*[-–]\s*/)[0] || 0);
+                  const dateB = new Date(b.date?.split(/\s*[-–]\s*/)[0] || 0);
+                  return dateA - dateB;
+                });
+
+              console.log(`Filtered Payments: ${filteredPayments?.length || 0}`);
+              
+              if (party.weeklyNP) {
+                console.log(`Weekly NP: ${party.weeklyNP.amount}`);
+              }
+
+              return {
+                ...party,
+                payments: filteredPayments
+              };
+            })
+            .filter((party, index) => {
+              const hasPayments = party.payments && party.payments.length > 0;
+              const hasNP = !!party.weeklyNP;
+              const keepParty = hasPayments || hasNP;
+              
+              if (!keepParty) {
+                console.log(`\nParty ${index + 1} EXCLUDED (no payments or NP)`);
+              }
+              
+              return keepParty;
+            })
+          };
+          
+          console.log('\n=== FILTERED RESULTS ===');
+          console.log('Total Parties After Filter:', filteredData.parties?.length);
+          console.log('Filtered Data:', JSON.stringify(filteredData, null, 2));
+
+          setWeeklyData(filteredData);
+        } else {
+          console.log('Payments response not successful, setting empty parties');
+          setWeeklyData({ parties: [] });
+        }
+
+        console.log('\n=== EXPENSES ===');
+        console.log('Total Expenses:', expensesRes?.data?.length || 0);
+        console.log('Expenses Data:', JSON.stringify(expensesRes?.data, null, 2));
+
         setExpenses(expensesRes?.data || []);
-      } catch {
+      } catch (e) {
+        console.error('\n=== ERROR ===');
+        console.error('Error details:', e);
         if (!cancelled) {
           setError('Failed to load report');
           setWeeklyData({ parties: [] });
@@ -46,29 +146,13 @@ export const Report = () => {
     return () => { cancelled = true; };
   }, [weekStart, weekEnd]);
 
-  // Sort expenses by date (most recent first)
-  const sortedExpenses = useMemo(() => {
-    if (!Array.isArray(expenses)) return [];
-    return [...expenses].sort((a, b) => {
-      const dateA = new Date(a.expenseDate);
-      const dateB = new Date(b.expenseDate);
-      return dateB - dateA;
-    });
-  }, [expenses]);
-
-  // Sort parties by partyCode
-  const sortedParties = useMemo(() => {
-    const parties = weeklyData?.parties || [];
-    return [...parties].sort((a, b) => {
-      const codeA = a.partyCode || '';
-      const codeB = b.partyCode || '';
-      return codeA.localeCompare(codeB);
-    });
-  }, [weeklyData]);
 
   // Aggregate all parties
   const grand = useMemo(() => {
-    const parties = sortedParties;
+    console.log('\n=== CALCULATING GRAND TOTALS ===');
+    const parties = weeklyData?.parties || [];
+    console.log('Parties to aggregate:', parties.length);
+
     const acc = {
       paymentAmount: 0,
       pwt: 0,
@@ -78,6 +162,7 @@ export const Report = () => {
       tda: 0,
       npAmount: 0,
     };
+
     for (const party of parties) {
       const subtotal = {
         paymentAmount: 0,
@@ -88,6 +173,10 @@ export const Report = () => {
         tda: 0,
         npAmount: 0,
       };
+
+      console.log(`\nAggregating Party: ${party.partyCode}`);
+      console.log(`  Payments count: ${party.payments?.length || 0}`);
+
       for (const payment of party?.payments || []) {
         subtotal.paymentAmount += payment?.paymentAmount || 0;
         subtotal.pwt += payment?.pwt || 0;
@@ -96,12 +185,17 @@ export const Report = () => {
         subtotal.due += payment?.due || 0;
         subtotal.tda += payment?.tda || 0;
       }
+
+      // CORRECTED: NP only adds to paymentAmount, not bank
       if (party?.weeklyNP) {
         const npAmount = party.weeklyNP.amount || 0;
+        console.log(`  Adding Weekly NP: ${npAmount} (to paymentAmount only)`);
         subtotal.paymentAmount += npAmount;
-        subtotal.bank += npAmount;
         subtotal.npAmount = npAmount;
       }
+
+      console.log('  Party Subtotal:', subtotal);
+
       acc.paymentAmount += subtotal.paymentAmount;
       acc.pwt += subtotal.pwt;
       acc.cash += subtotal.cash;
@@ -110,29 +204,63 @@ export const Report = () => {
       acc.tda += subtotal.tda;
       acc.npAmount += subtotal.npAmount;
     }
+
+    console.log('\n=== GRAND TOTAL ===');
+    console.log(acc);
+
     return acc;
-  }, [sortedParties]);
+  }, [weeklyData]);
+
 
   const totalExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return 0;
-    return expenses.reduce((sum, e) => sum + (e?.expenseAmount || 0), 0);
+    const total = expenses.reduce((sum, e) => sum + (e?.expenseAmount || 0), 0);
+    console.log('\n=== TOTAL EXPENSES ===');
+    console.log('Expenses count:', expenses.length);
+    console.log('Total:', total);
+    return total;
   }, [expenses]); 
 
-  const finalCash = useMemo(() => (grand.cash || 0) - totalExpenses, [grand, totalExpenses]);
+
+  const finalCash = useMemo(() => {
+    const result = (grand.cash || 0) - totalExpenses;
+    console.log('\n=== FINAL CASH ===');
+    console.log('Cash:', grand.cash);
+    console.log('Expenses:', totalExpenses);
+    console.log('Final Cash:', result);
+    return result;
+  }, [grand, totalExpenses]);
+
 
   const totalAllColumns = useMemo(() => {
-    return (grand.pwt || 0)
+    const result = (grand.pwt || 0)
       + (grand.cash || 0)
       + ((grand.bank || 0) - (grand.npAmount || 0))
       + (grand.due || 0)
       + (grand.tda || 0);
+
+    console.log('\n=== COMBINED TOTAL ===');
+    console.log('PWT:', grand.pwt);
+    console.log('Cash:', grand.cash);
+    console.log('Bank:', grand.bank);
+    console.log('NP Amount:', grand.npAmount);
+    console.log('Bank - NP:', grand.bank - grand.npAmount);
+    console.log('Due:', grand.due);
+    console.log('TDA:', grand.tda);
+    console.log('Combined Total:', result);
+
+    return result;
   }, [grand]); 
 
-  // UPDATED: Get current day name for display
-  const currentDayName = useMemo(() => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return days[today.getDay()];
-  }, [today]);
+
+  const jumpByDays = (days) => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + days);
+    console.log(`\n=== JUMPING ${days} DAYS ===`);
+    console.log('New Date:', next);
+    setPickedDate(next);
+  };
+
 
   const StatCard = ({ title, value, icon: Icon, accent = 'emerald' }) => (
     <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
@@ -149,55 +277,48 @@ export const Report = () => {
     </div>
   );
 
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - UPDATED: Removed navigation buttons */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <Calendar className="w-8 h-8 text-emerald-600" />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    Current Week Report
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {weekStart.toLocaleDateString('en-IN', { 
-                      weekday: 'short',
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })} — {weekEnd.toLocaleDateString('en-IN', { 
-                      weekday: 'short',
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Current Day Badge */}
-            <div className="flex flex-col items-end gap-2">
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-800 border-2 border-emerald-300">
-                Today: {currentDayName}, {today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-              </span>
-              <span className="text-xs text-gray-500 font-medium">
-                Showing data for Monday to Sunday (Current Week Only)
-              </span>
-            </div>
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Weekly Report</h1>
+            <p className="text-sm text-gray-600">
+              {weekStart.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — {weekEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} (Mon–Sun)
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => jumpByDays(-7)}
+              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium"
+            >
+              ← Previous Week
+            </button>
+            <button
+              onClick={() => setPickedDate(new Date())}
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium shadow"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => jumpByDays(7)}
+              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium"
+            >
+              Next Week →
+            </button>
           </div>
         </div>
       </div>
+
 
       {/* Content */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-            <p className="text-gray-600 font-medium">Loading current week report...</p>
+            <p className="text-gray-600 font-medium">Loading report...</p>
           </div>
         ) : error ? (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 text-center">
@@ -217,6 +338,7 @@ export const Report = () => {
               <StatCard title="Expenses (Week)" value={-totalExpenses} icon={Receipt} accent="rose" />
             </div>
 
+
             {/* Final Cash */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -231,10 +353,11 @@ export const Report = () => {
                     {num(finalCash)}
                   </p>
                   <p className="mt-2 text-xs text-gray-500">
-                    Calculated as Cash − Expenses for the current week (Mon–Sun)
+                    Calculated as Cash − Expenses for the selected week
                   </p>
                 </div>
               </div>
+
 
               <div className="space-y-4">
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -242,26 +365,8 @@ export const Report = () => {
                   <p className="mt-1 text-lg font-semibold text-gray-900">{num(totalAllColumns)}</p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="text-xs text-gray-500">NP counted in Payment & Bank; excluded from Combined Total</p>
+                  <p className="text-xs text-gray-500">NP counted in Payment only; excluded from Combined Total</p>
                   <p className="mt-1 text-xs text-gray-400">Based on weekly NP adjustments</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Week Info Card */}
-            <div className="mt-6">
-              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-emerald-100">
-                    <Calendar className="w-6 h-6 text-emerald-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-900">Current Week Only</p>
-                    <p className="text-xs text-emerald-700 mt-1">
-                      This report shows data strictly for the current week (Monday to Sunday). 
-                      The week range updates automatically based on today's date.
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
