@@ -1,20 +1,18 @@
 // src/pages/Report.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculator, Receipt, Coins } from 'lucide-react';
+import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculator, Receipt, Coins, Calendar } from 'lucide-react';
 import { dashboardAPI, expenseAPI } from '../lib/api';
 import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
 
 const toISO = (d) => d.toISOString().slice(0, 10);
-// Group digits; add options if you want decimals: { minimumFractionDigits: 2, maximumFractionDigits: 2 }
 const num = (v) => (v ?? 0).toLocaleString();
 
 export const Report = () => {
-  // UPDATED: Initialize with current date to show current week by default
-  const [pickedDate, setPickedDate] = useState(() => new Date());
-  
+  // UPDATED: Always use current date - locked to current week only
+  const today = new Date();
   const { weekStart, weekEnd } = useMemo(
-    () => getIsoWeekBoundsFromDate(pickedDate),
-    [pickedDate]
+    () => getIsoWeekBoundsFromDate(today),
+    [] // Empty dependency - calculate once on mount
   );
   
   const [weeklyData, setWeeklyData] = useState(null);
@@ -48,17 +46,17 @@ export const Report = () => {
     return () => { cancelled = true; };
   }, [weekStart, weekEnd]);
 
-  // UPDATED: Sort expenses by date (most recent first)
+  // Sort expenses by date (most recent first)
   const sortedExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return [];
     return [...expenses].sort((a, b) => {
       const dateA = new Date(a.expenseDate);
       const dateB = new Date(b.expenseDate);
-      return dateB - dateA; // Descending order (most recent first)
+      return dateB - dateA;
     });
   }, [expenses]);
 
-  // UPDATED: Sort parties by partyCode
+  // Sort parties by partyCode
   const sortedParties = useMemo(() => {
     const parties = weeklyData?.parties || [];
     return [...parties].sort((a, b) => {
@@ -68,7 +66,7 @@ export const Report = () => {
     });
   }, [weeklyData]);
 
-  // Aggregate all parties (matches your existing logic)
+  // Aggregate all parties
   const grand = useMemo(() => {
     const parties = sortedParties;
     const acc = {
@@ -122,7 +120,6 @@ export const Report = () => {
 
   const finalCash = useMemo(() => (grand.cash || 0) - totalExpenses, [grand, totalExpenses]);
 
-  // Matches your displayed grand total: pwt + cash + (bank - np) + due + tda
   const totalAllColumns = useMemo(() => {
     return (grand.pwt || 0)
       + (grand.cash || 0)
@@ -131,18 +128,11 @@ export const Report = () => {
       + (grand.tda || 0);
   }, [grand]); 
 
-  const jumpByDays = (days) => {
-    const next = new Date(weekStart);
-    next.setDate(next.getDate() + days);
-    setPickedDate(next);
-  };
-
-  // UPDATED: Check if viewing current week
-  const isCurrentWeek = useMemo(() => {
-    const today = new Date();
-    const { weekStart: currentWeekStart } = getIsoWeekBoundsFromDate(today);
-    return toISO(weekStart) === toISO(currentWeekStart);
-  }, [weekStart]);
+  // UPDATED: Get current day name for display
+  const currentDayName = useMemo(() => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[today.getDay()];
+  }, [today]);
 
   const StatCard = ({ title, value, icon: Icon, accent = 'emerald' }) => (
     <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
@@ -161,46 +151,43 @@ export const Report = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Weekly Report
-              {isCurrentWeek && (
-                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                  Current Week
-                </span>
-              )}
-            </h1>
-            <p className="text-sm text-gray-600">
-              {weekStart.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — {weekEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} (Mon–Sun)
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => jumpByDays(-7)}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium"
-            >
-              ← Previous Week
-            </button>
-            <button
-              onClick={() => setPickedDate(new Date())}
-              disabled={isCurrentWeek}
-              className={`px-4 py-2 rounded-lg text-sm font-medium shadow transition-colors ${
-                isCurrentWeek
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => jumpByDays(7)}
-              className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium"
-            >
-              Next Week →
-            </button>
+      {/* Header - UPDATED: Removed navigation buttons */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <Calendar className="w-8 h-8 text-emerald-600" />
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Current Week Report
+                  </h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {weekStart.toLocaleDateString('en-IN', { 
+                      weekday: 'short',
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })} — {weekEnd.toLocaleDateString('en-IN', { 
+                      weekday: 'short',
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Current Day Badge */}
+            <div className="flex flex-col items-end gap-2">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-800 border-2 border-emerald-300">
+                Today: {currentDayName}, {today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+              <span className="text-xs text-gray-500 font-medium">
+                Showing data for Monday to Sunday (Current Week Only)
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -210,7 +197,7 @@ export const Report = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-            <p className="text-gray-600 font-medium">Loading report...</p>
+            <p className="text-gray-600 font-medium">Loading current week report...</p>
           </div>
         ) : error ? (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 text-center">
@@ -244,7 +231,7 @@ export const Report = () => {
                     {num(finalCash)}
                   </p>
                   <p className="mt-2 text-xs text-gray-500">
-                    Calculated as Cash − Expenses for the selected week
+                    Calculated as Cash − Expenses for the current week (Mon–Sun)
                   </p>
                 </div>
               </div>
@@ -257,6 +244,24 @@ export const Report = () => {
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="text-xs text-gray-500">NP counted in Payment & Bank; excluded from Combined Total</p>
                   <p className="mt-1 text-xs text-gray-400">Based on weekly NP adjustments</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Week Info Card */}
+            <div className="mt-6">
+              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-100">
+                    <Calendar className="w-6 h-6 text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-900">Current Week Only</p>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      This report shows data strictly for the current week (Monday to Sunday). 
+                      The week range updates automatically based on today's date.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
