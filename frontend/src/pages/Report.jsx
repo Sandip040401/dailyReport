@@ -360,10 +360,10 @@ export const Report = () => {
 
 
               <div className="space-y-4">
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                {/* <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="text-xs text-gray-500">PWT + Cash + (Bank − NP) + Due + TDA</p>
                   <p className="mt-1 text-lg font-semibold text-gray-900">{num(totalAllColumns)}</p>
-                </div>
+                </div> */}
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="text-xs text-gray-500">NP counted in Payment only; excluded from Combined Total</p>
                   <p className="mt-1 text-xs text-gray-400">Based on weekly NP adjustments</p>
