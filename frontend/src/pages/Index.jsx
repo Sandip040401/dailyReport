@@ -7,6 +7,7 @@ import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
 import { dashboardAPI, expenseAPI } from '../lib/api';
+import Loader from '../components/Loader';
 
 const toISO = (d) => d.toISOString().slice(0, 10);
 
@@ -132,10 +133,7 @@ export default function Index() {
       {/* Content */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-            <p className="text-gray-600 font-medium">Loading data...</p>
-          </div>
+          <Loader/>
         ) : error ? (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 text-center">
             <p className="text-red-700 font-medium">{error}</p>

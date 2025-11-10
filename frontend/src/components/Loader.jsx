@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function Loader() {
   return (
-    <div className="w-full animate-pulse">
+    <div className="w-full animate-pulse z-[999]">
       {/* Header Skeleton */}
       <div className="bg-gray-100 p-4 rounded-t-lg border border-gray-200">
         <div className="flex items-center gap-2">
