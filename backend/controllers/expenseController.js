@@ -35,6 +35,7 @@ export const createExpense = async (req, res) => {
 export const getExpenses = async (req, res) => {
   try {
     const { startDate, endDate, weekNumber, expenseCategory } = req.query;
+    
     const filter = {};
 
     if (weekNumber) filter.weekNumber = parseInt(weekNumber);

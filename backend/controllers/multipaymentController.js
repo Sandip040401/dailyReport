@@ -147,6 +147,7 @@ export const getWeeklyPayments = async (req, res) => {
   try {
     const { partyId, weekNumber, weekYear, startDate, endDate } = req.query;
 
+
     const filter = {};
     if (partyId) filter.party = partyId;
     if (weekNumber) filter.weekNumber = parseInt(weekNumber, 10);
