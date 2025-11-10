@@ -495,35 +495,40 @@ export default function MultiDayPaymentsPage() {
     });
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-    if (editingCell) {
-      const { partyId, rowId } = editingCell;
-      const key = `${partyId}-${rowId}`;
-      setModifiedRows((prev) => {
-        const existing = prev[key]?.fields || {};
-        const nextFields = {
-          ...existing,
-          [name]: value === "" ? undefined : Number(value),
-        };
-        return {
-          ...prev,
-          [key]: {
-            partyId,
-            rowId,
-            fields: pickDefinedNumbers(nextFields),
-            startDate:
-              prev[key]?.startDate ??
-              rowsByParty[partyId]?.find((r) => r.id === rowId)?.startDate,
-            endDate:
-              prev[key]?.endDate ??
-              rowsByParty[partyId]?.find((r) => r.id === rowId)?.endDate,
-          },
-        };
-      });
-    }
-  };
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  
+  // Update formData immediately for the input field
+  setFormData(p => ({ 
+    ...p, 
+    [name]: value // Keep as string for controlled input
+  }));
+
+  if (editingCell) {
+    const { partyId, rowId } = editingCell;
+    const key = `${partyId}-${rowId}`;
+    
+    setModifiedRows(prev => {
+      const existing = prev[key]?.fields || {};
+      const nextFields = {
+        ...existing,
+        [name]: value === "" ? undefined : Number(value), // Convert to number for storage
+      };
+      
+      return {
+        ...prev,
+        [key]: {
+          partyId,
+          rowId,
+          fields: pickDefinedNumbers(nextFields),
+          startDate: prev[key]?.startDate ?? rowsByParty[partyId]?.find(r => r.id === rowId)?.startDate,
+          endDate: prev[key]?.endDate ?? rowsByParty[partyId]?.find(r => r.id === rowId)?.endDate,
+        },
+      };
+    });
+  }
+};
+
 
   const handleKeyDown = (e) => {
     const k = e.key.toLowerCase();
@@ -879,55 +884,58 @@ export default function MultiDayPaymentsPage() {
       year: "2-digit",
     });
 
-  const renderCell = (
-    colIndex,
-    isEditing,
-    isCurrentCell,
-    row,
-    partyId,
-    globalIndex
-  ) => {
-    const fieldName = cellOrder[colIndex];
-    const modKey = `${partyId}-${row.id}`;
-    const modified = modifiedRows[modKey]?.fields || {};
-    const effective = { ...(row.fields || {}), ...modified };
-    const displayValue =
-      typeof effective?.[fieldName] === "number" ? effective[fieldName] : 0;
-    const cellValue = formData[fieldName];
+const renderCell = (
+  colIndex,
+  isEditing,
+  isCurrentCell,
+  row,
+  partyId,
+  globalRowIndex
+) => {
+  const fieldName = cellOrder[colIndex];
+  const modKey = `${partyId}-${row.id}`;
+  const modified = modifiedRows[modKey]?.fields || {};
+  const effective = { ...(row.fields || {}), ...modified };
+  const displayValue =
+    typeof effective?.[fieldName] === "number" ? effective[fieldName] : 0;
+  
+  // Convert to string for input value
+  const cellValue = String(formData[fieldName] ?? "");
 
-    return (
-      <td
-        className={`border border-gray-500 px-3 py-2 text-right cursor-pointer transition-colors ${
-          isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
-        }`}
-        onClick={() => handleCellClick(partyId, row, colIndex, globalRowIndex)}
-      >
-        {isEditing && isCurrentCell ? (
-          <input
-            type="number"
-            name={fieldName}
-            value={cellValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            onWheel={(e) => {
-              e.preventDefault();
-              e.currentTarget.blur();
-            }}
-            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
-          />
-        ) : (
-          <span
-            className={`text-md font-medium ${
-              displayValue ? "text-gray-900" : "text-gray-400"
-            }`}
-          >
-            {displayValue ? Number(displayValue).toLocaleString() : "-"}
-          </span>
-        )}
-      </td>
-    );
-  };
+  return (
+    <td
+      className={`border border-gray-500 px-3 py-2 text-right cursor-pointer transition-colors ${
+        isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
+      }`}
+      onClick={() => handleCellClick(partyId, row, colIndex, globalRowIndex)}
+    >
+      {isEditing && isCurrentCell ? (
+        <input
+          type="number"
+          name={fieldName}
+          value={cellValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          onWheel={(e) => {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }}
+          className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
+        />
+      ) : (
+        <span
+          className={`text-md font-medium ${
+            displayValue ? "text-gray-900" : "text-gray-400"
+          }`}
+        >
+          {displayValue ? Number(displayValue).toLocaleString() : "-"}
+        </span>
+      )}
+    </td>
+  );
+};
+
 
   // NEW: Check if admin
   const isAdmin = userRole === "admin";
