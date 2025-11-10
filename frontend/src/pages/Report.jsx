@@ -4,14 +4,10 @@ import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculat
 import { dashboardAPI, expenseAPI } from '../lib/api';
 import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
 
+
 const toISO = (d) => d.toISOString().slice(0, 10);
 const num = (v) => (v ?? 0).toLocaleString();
 
-// Convert JavaScript getDay() (0=Sunday) to ISO day (1=Monday, 7=Sunday)
-const getISODay = (date) => {
-  const day = date.getDay();
-  return day === 0 ? 7 : day;
-};
 
 export const Report = () => {
   const [pickedDate, setPickedDate] = useState(new Date());
@@ -53,17 +49,16 @@ export const Report = () => {
 
         if (cancelled) return;
 
-        // Filter payments by DAY OF WEEK instead of date range
+        // Filter payments by date like Index.jsx
         if (paymentsRes?.success) {
-          console.log('\n=== FILTERING PAYMENTS BY DAY OF WEEK ===');
+          console.log('\n=== FILTERING PAYMENTS ===');
           console.log('Total Parties Before Filter:', paymentsRes.parties?.length);
 
-          // Get ISO day numbers for week range (1=Monday to 7=Sunday)
-          const startDayOfWeek = getISODay(weekStart); // Should be 1 (Monday)
-          const endDayOfWeek = getISODay(weekEnd);     // Should be 7 (Sunday)
+          const weekStartDate = new Date(weekStart);
+          const weekEndDate = new Date(weekEnd);
           
-          console.log('Start Day of Week (ISO):', startDayOfWeek, '(Monday)');
-          console.log('End Day of Week (ISO):', endDayOfWeek, '(Sunday)');
+          console.log('Filter Range Start:', weekStartDate.toISOString());
+          console.log('Filter Range End:', weekEndDate.toISOString());
 
           const filteredData = {
             ...paymentsRes,
@@ -78,21 +73,16 @@ export const Report = () => {
                     return false;
                   }
 
-                  // Parse the payment date
                   const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
                   const paymentDate = new Date(dates[0]);
-                  const paymentDayOfWeek = getISODay(paymentDate);
                   
-                  // Check if payment's day of week falls within the range
-                  // For Monday (1) to Sunday (7), all days 1-7 are included
-                  const isInRange = paymentDayOfWeek >= startDayOfWeek && paymentDayOfWeek <= endDayOfWeek;
+                  const isInRange = paymentDate >= weekStartDate && paymentDate <= weekEndDate;
                   
                   console.log(`  Payment ${paymentIndex + 1}:`);
                   console.log(`    Original Date: ${payment.date}`);
                   console.log(`    Parsed Date: ${paymentDate.toISOString()}`);
-                  console.log(`    Day of Week (ISO): ${paymentDayOfWeek} (${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][paymentDayOfWeek-1]})`);
                   console.log(`    Amount: ${payment.paymentAmount}`);
-                  console.log(`    In Range (${startDayOfWeek}-${endDayOfWeek}): ${isInRange}`);
+                  console.log(`    In Range: ${isInRange}`);
 
                   return isInRange;
                 })
@@ -156,6 +146,7 @@ export const Report = () => {
     return () => { cancelled = true; };
   }, [weekStart, weekEnd]);
 
+
   // Aggregate all parties
   const grand = useMemo(() => {
     console.log('\n=== CALCULATING GRAND TOTALS ===');
@@ -195,7 +186,7 @@ export const Report = () => {
         subtotal.tda += payment?.tda || 0;
       }
 
-      // NP only adds to paymentAmount, not bank
+      // CORRECTED: NP only adds to paymentAmount, not bank
       if (party?.weeklyNP) {
         const npAmount = party.weeklyNP.amount || 0;
         console.log(`  Adding Weekly NP: ${npAmount} (to paymentAmount only)`);
@@ -220,6 +211,7 @@ export const Report = () => {
     return acc;
   }, [weeklyData]);
 
+
   const totalExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return 0;
     const total = expenses.reduce((sum, e) => sum + (e?.expenseAmount || 0), 0);
@@ -229,6 +221,7 @@ export const Report = () => {
     return total;
   }, [expenses]); 
 
+
   const finalCash = useMemo(() => {
     const result = (grand.cash || 0) - totalExpenses;
     console.log('\n=== FINAL CASH ===');
@@ -237,6 +230,7 @@ export const Report = () => {
     console.log('Final Cash:', result);
     return result;
   }, [grand, totalExpenses]);
+
 
   const totalAllColumns = useMemo(() => {
     const result = (grand.pwt || 0)
@@ -258,6 +252,7 @@ export const Report = () => {
     return result;
   }, [grand]); 
 
+
   const jumpByDays = (days) => {
     const next = new Date(weekStart);
     next.setDate(next.getDate() + days);
@@ -265,6 +260,7 @@ export const Report = () => {
     console.log('New Date:', next);
     setPickedDate(next);
   };
+
 
   const StatCard = ({ title, value, icon: Icon, accent = 'emerald' }) => (
     <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
@@ -280,6 +276,7 @@ export const Report = () => {
       </div>
     </div>
   );
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -315,6 +312,7 @@ export const Report = () => {
         </div>
       </div>
 
+
       {/* Content */}
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {loading ? (
@@ -340,6 +338,7 @@ export const Report = () => {
               <StatCard title="Expenses (Week)" value={-totalExpenses} icon={Receipt} accent="rose" />
             </div>
 
+
             {/* Final Cash */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -359,7 +358,12 @@ export const Report = () => {
                 </div>
               </div>
 
+
               <div className="space-y-4">
+                {/* <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs text-gray-500">PWT + Cash + (Bank − NP) + Due + TDA</p>
+                  <p className="mt-1 text-lg font-semibold text-gray-900">{num(totalAllColumns)}</p>
+                </div> */}
                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="text-xs text-gray-500">NP counted in Payment only; excluded from Combined Total</p>
                   <p className="mt-1 text-xs text-gray-400">Based on weekly NP adjustments</p>
