@@ -32,8 +32,8 @@ export default function Index() {
         
         // Fetch both payments and expenses
         const [paymentsRes, expensesRes] = await Promise.all([
-          dashboardAPI.getRangeSummary(toISO(weekStart), toISO(weekEnd)),
-          expenseAPI.getExpenses({ startDate: toISO(weekStart), endDate: toISO(weekEnd) })
+          dashboardAPI.getRangeSummary(weekStart,weekEnd),
+          expenseAPI.getExpenses({ startDate: weekStart, endDate: weekEnd })
         ]);
         
 

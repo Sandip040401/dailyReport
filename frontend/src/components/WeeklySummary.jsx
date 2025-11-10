@@ -182,11 +182,12 @@ export default function WeeklySummary({ data, expenses = [] }) {
   const weekNumber = data?.weekNumber;
   const weekYear = data?.weekYear;
 
-  const dateColWidth = "w-[120px] min-w-[120px] max-w-[120px]";
-  const partyColWidth = "w-[120px] min-w-[120px] max-w-[120px]";
-  const numColWidth = "w-[120px] min-w-[120px]";
-  const cellBase =
-    "px-4 py-3 border-b border-gray-200 align-middle transition-colors duration-150";
+  // OPTIMIZED: Larger fonts, compact widths
+  const cellBase = "px-1.5 md:px-2 lg:px-3 xl:px-4 py-1.5 md:py-2 border-b border-gray-200 align-middle transition-colors duration-150";
+  const dateCell = `${cellBase} text-xs sm:text-sm md:text-base`; // LARGER font for date
+  const partyCell = `${cellBase} text-xs sm:text-sm md:text-base`; // LARGER font for party
+  const dataCell = `${cellBase} text-xs sm:text-sm md:text-base whitespace-nowrap`; // LARGER font for numbers
+  
   const cellLeft = "text-left";
   const cellRight = "text-right";
   const stickyBase = "sticky bg-white";
@@ -237,40 +238,40 @@ export default function WeeklySummary({ data, expenses = [] }) {
   }
 
   return (
-    <div className="overflow-auto rounded-xl border-2 border-gray-300 shadow-2xl bg-white">
+    <div className="overflow-x-auto rounded-xl border-2 border-gray-300 shadow-2xl bg-white w-full">
       {/* Role indicator banner */}
       {userRole && (
-        <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="px-2 sm:px-3 md:px-4 py-1.5 md:py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between flex-wrap gap-1.5 md:gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
             <span
-              className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-bold ${
+              className={`inline-flex items-center px-1.5 sm:px-2 md:px-3 py-0.5 md:py-1 rounded-md text-[10px] md:text-xs font-bold ${
                 userRole === "admin"
                   ? "bg-purple-100 text-purple-800"
                   : "bg-blue-100 text-blue-800"
               }`}
             >
               {userRole === "admin"
-                ? "👑 ADMIN MODE"
-                : "👤 EMPLOYEE - VIEW ONLY"}
+                ? "👑 ADMIN"
+                : "👤 EMPLOYEE"}
             </span>
-            <span className="text-sm text-gray-600">
+            <span className="text-[10px] md:text-xs lg:text-sm text-gray-600">
               {userRole === "admin"
-                ? "Click bank cells to toggle colors"
-                : "Bank colors are view-only"}
+                ? "Click bank cells"
+                : "View only"}
             </span>
           </div>
         </div>
       )}
 
-      <table className="min-w-full table-auto border-separate border-spacing-0">
-        <thead className="text-sm text-gray-800 select-none">
+      <table className="w-full table-auto border-separate border-spacing-0">
+        <thead className="text-xs sm:text-sm md:text-base text-gray-800 select-none">
           <tr className="bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50">
             <th
-              className={`${cellBase} ${cellLeft} sticky top-0 z-30 ${dateColWidth} ${stickyBase} border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dateCell} ${cellLeft} sticky top-0 z-30 ${stickyDate} border-b-2 border-gray-400 font-bold py-2 md:py-3 w-16 sm:w-20`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-3 h-3 md:w-4 md:h-4 text-gray-600 hidden lg:block"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -286,12 +287,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
               </div>
             </th>
             <th
-              className={`${cellBase} ${cellLeft} sticky top-0 z-30 ${partyColWidth} ${stickyBase} border-b-2 border-gray-400 font-bold text-base py-4`}
-              style={{ left: 120 }}
+              className={`${partyCell} ${cellLeft} sticky top-0 z-30 ${stickyParty} border-b-2 border-gray-400 font-bold py-2 md:py-3 w-20 sm:w-24`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-3 h-3 md:w-4 md:h-4 text-gray-600 hidden lg:block"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -303,54 +303,54 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
                   />
                 </svg>
-                <span>Party Name</span>
+                <span>Party</span>
               </div>
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
               Payment
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
               PWT
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
               Cash
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-1">
                 <span>Bank</span>
                 {userRole === "admin" && (
-                  <span className="text-xs text-gray-500 font-normal">
+                  <span className="text-[8px] text-gray-500 font-normal hidden xl:inline">
                     (click)
                   </span>
                 )}
               </div>
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
               Due
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold text-base py-4`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-white border-b-2 border-gray-400 font-bold py-2 md:py-3`}
             >
               TDA
             </th>
             <th
-              className={`${cellBase} ${cellRight} ${numColWidth} sticky top-0 z-30 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-400 font-bold text-base py-4 text-blue-800`}
+              className={`${dataCell} ${cellRight} sticky top-0 z-30 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-400 font-bold py-2 md:py-3 text-blue-800`}
             >
               Total
             </th>
           </tr>
         </thead>
-        <tbody className="text-md font-semibold text-gray-900">
+        <tbody className="font-semibold text-gray-900">
           {parties.map((party, partyIndex) => (
             <React.Fragment key={party.partyId || partyIndex}>
               {party.payments.map((payment, paymentIndex) => {
@@ -367,48 +367,46 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     key={`${party.partyId}-payment-${paymentIndex}`}
                     className={rowCls(payment.type)}
                   >
-                    <td
-                      className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate}`}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-base font-semibold text-gray-900">
+                    <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                      <div className="flex flex-col leading-tight">
+                        <span className="font-bold text-gray-900 break-words">
                           {payment.date || "—"}
                         </span>
                         {payment.source && (
-                          <span className="text-xs text-gray-500 mt-0.5 font-medium uppercase tracking-wide">
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-wide break-words">
                             {payment.source}
                           </span>
                         )}
                       </div>
                     </td>
                     <td
-                      className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty}`}
-                      style={{ left: 120 }}
+                      className={`${partyCell} ${cellLeft} ${stickyParty} w-20 sm:w-24`}
+                      style={{ left: "var(--date-column-width, auto)" }}
                     >
-                      <div className="flex flex-col">
-                        <span className="text-base font-semibold text-gray-900">
+                      <div className="flex flex-col max-w-[80px] sm:max-w-[96px]">
+                        <span className="font-bold text-gray-900 truncate">
                           {party.partyCode}
                         </span>
                         {party.partyName && (
-                          <span className="text-xs text-gray-500 mt-0.5 font-mono">
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 font-mono truncate">
                             {party.partyName}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                      <span className="text-gray-900">
+                    <td className={`${dataCell} ${cellRight}`}>
+                      <span className="text-gray-900 font-bold">
                         {num(payment.paymentAmount)}
                       </span>
                     </td>
-                    <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                      <span className="text-gray-900">{num(payment.pwt)}</span>
+                    <td className={`${dataCell} ${cellRight}`}>
+                      <span className="text-gray-900 font-bold">{num(payment.pwt)}</span>
                     </td>
-                    <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                      <span className="text-gray-900">{num(payment.cash)}</span>
+                    <td className={`${dataCell} ${cellRight}`}>
+                      <span className="text-gray-900 font-bold">{num(payment.cash)}</span>
                     </td>
                     <td
-                      className={`${cellBase} ${cellRight} ${numColWidth}`}
+                      className={`${dataCell} ${cellRight}`}
                       style={getBankCellStyle(bankCellKey, payment.bank)}
                       onClick={() =>
                         payment.bank > 0 &&
@@ -427,33 +425,31 @@ export default function WeeklySummary({ data, expenses = [] }) {
                         payment.bank > 0
                           ? userRole === "admin"
                             ? "Click to toggle color"
-                            : "View only - Admin access required"
+                            : "View only"
                           : ""
                       }
                     >
                       {updatingKey === bankCellKey ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                          <span className="text-gray-900 font-semibold">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <div className="w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                          <span className="text-gray-900 font-bold">
                             {num(payment.bank)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-gray-900 font-semibold">
+                        <span className="text-gray-900 font-bold">
                           {num(payment.bank)}
                         </span>
                       )}
                     </td>
-                    <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                      <span className="text-gray-900">{num(payment.due)}</span>
+                    <td className={`${dataCell} ${cellRight}`}>
+                      <span className="text-gray-900 font-bold">{num(payment.due)}</span>
                     </td>
-                    <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                      <span className="text-gray-900">{num(payment.tda)}</span>
+                    <td className={`${dataCell} ${cellRight}`}>
+                      <span className="text-gray-900 font-bold">{num(payment.tda)}</span>
                     </td>
-                    <td
-                      className={`${cellBase} ${cellRight} ${numColWidth} bg-blue-50/50`}
-                    >
-                      <span className="font-semibold text-blue-900">
+                    <td className={`${dataCell} ${cellRight} bg-blue-50/50`}>
+                      <span className="font-bold text-blue-900 text-sm sm:text-base md:text-lg">
                         {num(rowTotal)}
                       </span>
                     </td>
@@ -463,127 +459,85 @@ export default function WeeklySummary({ data, expenses = [] }) {
 
               {party.weeklyNP && (
                 <tr className={rowCls("weeklyNP")}>
-                  <td
-                    className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-bold">
-                        NP/DUE
-                      </span>
-                    </div>
+                  <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900 text-[9px] md:text-[10px] font-bold break-words">
+                      NP
+                    </span>
                   </td>
                   <td
-                    className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty}`}
-                    style={{ left: 120 }}
+                    className={`${partyCell} ${cellLeft} ${stickyParty} w-20 sm:w-24`}
+                    style={{ left: "var(--date-column-width, auto)" }}
                   >
                     {party.weeklyNP.name && (
-                      <span className="text-sm text-gray-700 font-medium">
+                      <span className="text-gray-700 font-bold truncate max-w-[80px] sm:max-w-[96px] block">
                         {party.weeklyNP.name}
                       </span>
                     )}
                   </td>
-                  <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                    <span className="text-amber-900 font-semibold">
+                  <td className={`${dataCell} ${cellRight}`}>
+                    <span className="text-amber-900 font-bold">
                       {num(party.weeklyNP.amount)}
                     </span>
                   </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} bg-blue-50/50 text-gray-400`}
-                  >
-                    —
-                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}>—</td>
                 </tr>
               )}
 
               <tr className={rowCls("partyTotal")}>
                 <td
-                  className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate} border-t-2 border-emerald-300`}
+                  className={`${dateCell} ${cellLeft} ${stickyDate} border-t-2 border-emerald-300 w-16 sm:w-20`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-emerald-600 text-white text-xs font-bold">
-                      TOTAL
-                    </span>
-                  </div>
-                </td>
-                <td
-                  className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty} border-t-2 border-emerald-300`}
-                  style={{ left: 120 }}
-                >
-                  <span className="text-base font-bold text-emerald-700">
-                    {party.partyCode} Total
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[9px] md:text-[10px] font-bold break-words">
+                    TOTAL
                   </span>
                 </td>
                 <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
+                  className={`${partyCell} ${cellLeft} ${stickyParty} border-t-2 border-emerald-300 w-20 sm:w-24`}
+                  style={{ left: "var(--date-column-width, auto)" }}
                 >
+                  <span className="font-bold text-emerald-700 truncate max-w-[80px] sm:max-w-[96px] block">
+                    -
+                  </span>
+                </td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.paymentAmount)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
-                >
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.pwt)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
-                >
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.cash)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
-                >
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.bank)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
-                >
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.due)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-emerald-300`}
-                >
+                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.tda)}
                   </span>
                 </td>
                 <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} bg-emerald-100 border-t-2 border-emerald-400`}
+                  className={`${dataCell} ${cellRight} bg-emerald-100 border-t-2 border-emerald-400`}
                 >
-                  <span className="font-bold text-emerald-800 text-base">
+                  <span className="font-bold text-emerald-800 text-sm sm:text-base md:text-lg">
                     {num(
                       party.partyTotal.pwt +
                         party.partyTotal.cash +
@@ -596,7 +550,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
               </tr>
 
               {partyIndex < parties.length - 1 && (
-                <tr className="h-3 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100">
+                <tr className="h-1.5 md:h-2 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100">
                   <td colSpan="9" className="border-b border-gray-200"></td>
                 </tr>
               )}
@@ -606,68 +560,54 @@ export default function WeeklySummary({ data, expenses = [] }) {
           {grandTotal && (
             <tr className={rowCls("grandTotal")}>
               <td
-                className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate} border-t-4 border-blue-500`}
+                className={`${dateCell} ${cellLeft} ${stickyDate} border-t-4 border-blue-500 w-16 sm:w-20`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center px-3 py-1 rounded-md bg-blue-600 text-white text-xs font-bold">
-                    GRAND TOTAL
-                  </span>
-                </div>
-              </td>
-              <td
-                className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty} border-t-4 border-blue-500`}
-                style={{ left: 120 }}
-              >
-                <span className="text-base font-bold text-blue-800">
-                  All Parties Combined
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[9px] md:text-[10px] font-bold break-words">
+                  GRAND
                 </span>
               </td>
               <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
+                className={`${partyCell} ${cellLeft} ${stickyParty} border-t-4 border-blue-500 w-20 sm:w-24`}
+                style={{ left: "var(--date-column-width, auto)" }}
               >
-                <span className="font-bold text-blue-800 text-base">
+                <span className="font-bold text-blue-800 truncate max-w-[80px] sm:max-w-[96px] block">
+                  All
+                </span>
+              </td>
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.paymentAmount)}
                 </span>
               </td>
-              <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
-              >
-                <span className="font-bold text-blue-800 text-base">
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.pwt)}
                 </span>
               </td>
-              <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
-              >
-                <span className="font-bold text-blue-800 text-base">
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.cash)}
                 </span>
               </td>
-              <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
-              >
-                <span className="font-bold text-blue-800 text-base">
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.bank)}
                 </span>
               </td>
-              <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
-              >
-                <span className="font-bold text-blue-800 text-base">
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.due)}
                 </span>
               </td>
-              <td
-                className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-blue-500`}
-              >
-                <span className="font-bold text-blue-800 text-base">
+              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+                <span className="font-bold text-blue-800">
                   {num(grandTotal.tda)}
                 </span>
               </td>
               <td
-                className={`${cellBase} ${cellRight} ${numColWidth} bg-blue-200 border-t-4 border-blue-600`}
+                className={`${dataCell} ${cellRight} bg-blue-200 border-t-4 border-blue-600`}
               >
-                <span className="font-bold text-blue-900 text-lg">
+                <span className="font-bold text-blue-900 text-base sm:text-lg md:text-xl">
                   {num(
                     grandTotal.pwt +
                       grandTotal.cash +
@@ -682,192 +622,110 @@ export default function WeeklySummary({ data, expenses = [] }) {
 
           {Array.isArray(expenses) && expenses.length > 0 && (
             <>
-              <tr className="h-4 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100">
+              <tr className="h-2 md:h-3 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100">
                 <td colSpan="9" className="border-b-2 border-gray-300"></td>
               </tr>
 
               {expenses.map((expense, idx) => (
                 <tr key={expense._id || idx} className={rowCls("expense")}>
-                  <td
-                    className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate}`}
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-base font-semibold text-gray-900">
+                  <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                    <div className="flex flex-col leading-tight">
+                      <span className="font-bold text-gray-900 break-words">
                         {new Date(expense.expenseDate).toLocaleDateString(
                           "en-IN",
                           { day: "2-digit", month: "short", year: "numeric" }
                         )}
                       </span>
-                      <span className="text-xs text-red-600 mt-0.5 font-medium uppercase tracking-wide">
-                        EXPENSE
+                      <span className="text-[9px] sm:text-[10px] text-red-600 mt-0.5 font-medium uppercase tracking-wide break-words">
+                        EXP
                       </span>
                     </div>
                   </td>
                   <td
-                    className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty}`}
-                    style={{ left: 120 }}
+                    className={`${partyCell} ${cellLeft} ${stickyParty} w-20 sm:w-24`}
+                    style={{ left: "var(--date-column-width, auto)" }}
                   >
-                    <div className="flex flex-col">
-                      <span className="text-base font-semibold text-gray-900">
+                    <div className="flex flex-col max-w-[80px] sm:max-w-[96px]">
+                      <span className="font-bold text-gray-900 truncate">
                         {expense.expenseName}
                       </span>
                       {expense.expenseCategory && (
-                        <span className="text-xs text-gray-500 mt-0.5">
+                        <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 truncate">
                           {expense.expenseCategory}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td className={`${cellBase} ${cellRight} ${numColWidth}`}>
-                    <span className="text-red-600 font-semibold">
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight}`}>
+                    <span className="text-red-600 font-bold">
                       {num(expense.expenseAmount)}
                     </span>
                   </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} text-gray-400`}
-                  >
-                    —
-                  </td>
-                  <td
-                    className={`${cellBase} ${cellRight} ${numColWidth} bg-blue-50/50 text-gray-400`}
-                  >
-                    —
-                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}>—</td>
                 </tr>
               ))}
 
               <tr className={rowCls("expenseTotal")}>
                 <td
-                  className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate} border-t-2 border-red-300`}
+                  className={`${dateCell} ${cellLeft} ${stickyDate} border-t-2 border-red-300 w-16 sm:w-20`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-red-600 text-white text-xs font-bold">
-                      EXPENSES
-                    </span>
-                  </div>
-                </td>
-                <td
-                  className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty} border-t-2 border-red-300`}
-                  style={{ left: 120 }}
-                >
-                  <span className="text-base font-bold text-red-700">
-                    Total Expenses
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-red-600 text-white text-[9px] md:text-[10px] font-bold break-words">
+                    EXP
                   </span>
                 </td>
                 <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
+                  className={`${partyCell} ${cellLeft} ${stickyParty} border-t-2 border-red-300 w-20 sm:w-24`}
+                  style={{ left: "var(--date-column-width, auto)" }}
                 >
-                  —
+                  <span className="font-bold text-red-700 truncate max-w-[80px] sm:max-w-[96px] block">
+                    Tot Exp
+                  </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300`}
-                >
-                  <span className="font-bold text-red-700 text-base">
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300`}>
+                  <span className="font-bold text-red-700">
                     -{num(totalExpenses)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-2 border-red-300 text-gray-400`}
-                >
-                  —
-                </td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
               </tr>
 
               <tr className={rowCls("finalCash")}>
                 <td
-                  className={`${cellBase} ${cellLeft} ${dateColWidth} ${stickyDate} border-t-4 border-green-500`}
+                  className={`${dateCell} ${cellLeft} ${stickyDate} border-t-4 border-green-500 w-16 sm:w-20`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-md bg-green-600 text-white text-xs font-bold">
-                      FINAL CASH
-                    </span>
-                  </div>
-                </td>
-                <td
-                  className={`${cellBase} ${cellLeft} ${partyColWidth} ${stickyParty} border-t-4 border-green-500`}
-                  style={{ left: 120 }}
-                >
-                  <span className="text-base font-bold text-green-800">
-                    Cash After Expenses
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-green-600 text-white text-[9px] md:text-[10px] font-bold break-words">
+                    FINAL
                   </span>
                 </td>
                 <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
+                  className={`${partyCell} ${cellLeft} ${stickyParty} border-t-4 border-green-500 w-20 sm:w-24`}
+                  style={{ left: "var(--date-column-width, auto)" }}
                 >
-                  —
+                  <span className="font-bold text-green-800 truncate max-w-[80px] sm:max-w-[96px] block">
+                    After
+                  </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500`}
-                >
-                  <span className="font-bold text-green-800 text-lg">
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500`}>
+                  <span className="font-bold text-green-800 text-base sm:text-lg md:text-xl">
                     {num(finalCash)}
                   </span>
                 </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
-                >
-                  —
-                </td>
-                <td
-                  className={`${cellBase} ${cellRight} ${numColWidth} border-t-4 border-green-500 text-gray-400`}
-                >
-                  —
-                </td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
               </tr>
             </>
           )}

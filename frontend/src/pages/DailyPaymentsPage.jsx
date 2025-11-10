@@ -514,8 +514,8 @@ export default function DailyPaymentsPage() {
 
     return (
       <td
-        className={`border border-gray-200 px-3 py-2 text-right cursor-pointer transition-colors ${
-          isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
+        className={`border border-gray-300 px-3 py-2 text-right cursor-pointer transition-colors ${
+          isCurrentCell ? "bg-emerald-100 border-emerald-400" : "hover:bg-gray-50"
         }`}
         onClick={() =>
           handleCellClick(partyId, date, paymentData, colIndex, globalIndex)
@@ -735,7 +735,7 @@ export default function DailyPaymentsPage() {
                   className={`px-5 py-2 rounded-lg font-semibold transition-all ${
                     selectedParties.includes(party._id)
                       ? "bg-emerald-500 text-white shadow-lg scale-105"
-                      : "bg-white text-gray-700 border-2 border-gray-200 hover:border-emerald-400 hover:bg-gray-50"
+                      : "bg-white text-gray-700 border-2 border-gray-300 hover:border-emerald-400 hover:bg-gray-50"
                   }`}
                 >
                   {party.partyCode}
@@ -746,10 +746,10 @@ export default function DailyPaymentsPage() {
         </div>
       </div>
 
-      {/* Main Content - Table (Keep rest of your existing table code) */}
+      {/* Main Content - Table */}
       {selectedParties.length > 0 ? (
         <div className="max-w-full mx-auto px-6 py-8">
-          <div className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg">
+          <div className="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-lg">
             {loading ? (
               <div className="p-12 text-center">
                 <Loader2 className="w-16 h-16 text-emerald-500 animate-spin mx-auto" />
@@ -771,35 +771,35 @@ export default function DailyPaymentsPage() {
                       return (
                         <React.Fragment key={partyId}>
                           {/* Header row */}
-                          <tr className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-300">
-                            <th className="border border-gray-200 px-4 py-3 text-left text-xs font-bold text-gray-800 w-20">
+                          <tr className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-400">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-left text-xs font-bold text-gray-800 w-20">
                               DATE
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-left text-xs font-bold text-gray-800 w-28">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-left text-xs font-bold text-gray-800 w-28">
                               PARTY NAME
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
                               PAYMENT
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
                               PWT
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
                               CASH
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
                               BANK
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
                               DUE
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-20">
                               TDA
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
                               TOTAL
                             </th>
-                            <th className="border border-gray-200 px-4 py-3 text-center text-xs font-bold text-gray-800 w-16">
+                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-center text-xs font-bold text-gray-800 w-16">
                               ACT
                             </th>
                           </tr>
@@ -840,7 +840,7 @@ export default function DailyPaymentsPage() {
                                     : "hover:bg-gray-50"
                                 }`}
                               >
-                                <td className="border border-gray-200 px-4 py-2">
+                                <td className="border border-gray-300 px-4 py-2">
                                   <span className="text-md font-semibold text-gray-900">
                                     {new Date(date).toLocaleDateString(
                                       "en-IN",
@@ -852,7 +852,7 @@ export default function DailyPaymentsPage() {
                                     )}
                                   </span>
                                 </td>
-                                <td className="border border-gray-200 px-4 py-2">
+                                <td className="border border-gray-300 px-4 py-2">
                                   <span className="text-sm font-bold text-gray-900">
                                     {partyCode}
                                   </span>
@@ -870,7 +870,7 @@ export default function DailyPaymentsPage() {
                                   )
                                 )}
 
-                                <td className="border border-gray-200 px-4 py-2 text-right bg-gray-50">
+                                <td className="border border-gray-300 px-4 py-2 text-right bg-gray-50">
                                   <span
                                     className={`text-md font-bold ${
                                       modifiedData
@@ -882,7 +882,7 @@ export default function DailyPaymentsPage() {
                                   </span>
                                 </td>
 
-                                <td className="border border-gray-200 px-4 py-2 text-center">
+                                <td className="border border-gray-300 px-4 py-2 text-center">
                                   {payment ? (
                                     <button
                                       onClick={(e) => {
@@ -916,10 +916,10 @@ export default function DailyPaymentsPage() {
                               )
                             }
                           >
-                            <td className="border border-gray-200 px-4 py-2">
+                            <td className="border border-gray-300 px-4 py-2">
                               <span className="text-md text-gray-400"></span>
                             </td>
-                            <td className="border border-gray-200 px-4 py-2 text-left cursor-pointer">
+                            <td className="border border-gray-300 px-4 py-2 text-left cursor-pointer">
                               <input
                                 type="text"
                                 value={weeklyNPData[partyId]?.name || ""}
@@ -956,7 +956,7 @@ export default function DailyPaymentsPage() {
                                 className="w-full px-2 py-1 border-2 rounded text-md text-black focus:outline-none border-gray-300 focus:border-emerald-500"
                               />
                             </td>
-                            <td className="border border-gray-200 px-4 py-2 text-right cursor-pointer">
+                            <td className="border border-gray-300 px-4 py-2 text-right cursor-pointer">
                               <input
                                 type="number"
                                 onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
@@ -999,23 +999,23 @@ export default function DailyPaymentsPage() {
                             </td>
                             <td
                               colSpan="5"
-                              className="border border-gray-200 px-4 py-2"
+                              className="border border-gray-300 px-4 py-2"
                             ></td>
-                            <td className="border border-gray-200 px-4 py-2 text-right bg-gray-50">
+                            <td className="border border-gray-300 px-4 py-2 text-right bg-gray-50">
                               <span className="text-sm font-bold text-gray-900">
                                 -
                               </span>
                             </td>
-                            <td className="border border-gray-200 px-4 py-2"></td>
+                            <td className="border border-gray-300 px-4 py-2"></td>
                           </tr>
 
                           {/* Party Total Row */}
                           <tr className="bg-gradient-to-r from-emerald-50 to-emerald-25 border-t-2 border-b-2 border-emerald-400 font-bold">
-                            <td className="border border-gray-200 px-4 py-3 text-left text-sm text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-left text-sm text-gray-900">
                               PARTY TOTAL
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-left text-sm text-emerald-700"></td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-left text-sm text-emerald-700"></td>
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {(
                                 totals.amount +
                                 (typeof weeklyNPData[partyId]?.amount ===
@@ -1024,22 +1024,22 @@ export default function DailyPaymentsPage() {
                                   : 0)
                               ).toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {totals.pwt.toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {totals.cash.toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {totals.bank.toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {totals.due.toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                            <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                               {totals.tda.toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3 text-right bg-emerald-100 text-emerald-700">
+                            <td className="border border-gray-300 px-4 py-3 text-right bg-emerald-100 text-emerald-700">
                               {(
                                 totals.pwt +
                                 totals.cash +
@@ -1048,7 +1048,7 @@ export default function DailyPaymentsPage() {
                                 totals.tda
                               ).toLocaleString()}
                             </td>
-                            <td className="border border-gray-200 px-4 py-3"></td>
+                            <td className="border border-gray-300 px-4 py-3"></td>
                           </tr>
 
                           {/* Spacer between parties */}
@@ -1065,11 +1065,11 @@ export default function DailyPaymentsPage() {
                     <tr className="bg-gradient-to-r from-blue-50 to-blue-25 border-t-2 border-blue-400 font-bold">
                       <td
                         colSpan="2"
-                        className="border border-gray-200 px-4 py-3 text-left text-sm text-blue-700"
+                        className="border border-gray-300 px-4 py-3 text-left text-sm text-blue-700"
                       >
                         FINAL TOTAL
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {(
                           grandTotals.amount +
                           Object.values(weeklyNPData).reduce(
@@ -1082,22 +1082,22 @@ export default function DailyPaymentsPage() {
                           )
                         ).toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {grandTotals.pwt.toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {grandTotals.cash.toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {grandTotals.bank.toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {grandTotals.due.toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right text-gray-900">
+                      <td className="border border-gray-300 px-4 py-3 text-right text-gray-900">
                         {grandTotals.tda.toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3 text-right bg-blue-100 text-blue-700">
+                      <td className="border border-gray-300 px-4 py-3 text-right bg-blue-100 text-blue-700">
                         {(
                           grandTotals.pwt +
                           grandTotals.cash +
@@ -1106,7 +1106,7 @@ export default function DailyPaymentsPage() {
                           grandTotals.tda
                         ).toLocaleString()}
                       </td>
-                      <td className="border border-gray-200 px-4 py-3"></td>
+                      <td className="border border-gray-300 px-4 py-3"></td>
                     </tr>
                   </tbody>
                 </table>
@@ -1116,7 +1116,7 @@ export default function DailyPaymentsPage() {
         </div>
       ) : (
         <div className="max-w-full mx-auto px-6 py-16">
-          <div className="text-center bg-white rounded-xl p-12 border-2 border-gray-200">
+          <div className="text-center bg-white rounded-xl p-12 border-2 border-gray-300">
             <p className="text-xl text-gray-600 font-semibold">
               👆 Select week and parties to view payments
             </p>
