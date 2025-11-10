@@ -1,21 +1,95 @@
-// src/components/Loader.jsx
+// src/components/SkeletonLoader.jsx
 import React from 'react';
 
-export default function Loader({ message = "Loading..." }) {
+export default function Loader() {
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
-        {/* Spinner */}
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+    <div className="w-full animate-pulse">
+      {/* Header Skeleton */}
+      <div className="bg-gray-100 p-4 rounded-t-lg border border-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-gray-300 rounded"></div>
+          <div className="h-4 w-24 bg-gray-300 rounded"></div>
         </div>
-        
-        {/* Message */}
-        <div className="text-center">
-          <p className="text-lg font-semibold text-gray-800">{message}</p>
-          <p className="text-sm text-gray-500 mt-1">Please wait...</p>
+      </div>
+
+      {/* Table Header */}
+      <div className="grid grid-cols-10 gap-4 bg-gray-50 p-4 border-x border-gray-200">
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+        <div className="h-3 bg-gray-300 rounded col-span-1"></div>
+      </div>
+
+      {/* Table Rows - Party 1 */}
+      {[...Array(2)].map((_, idx) => (
+        <div key={`row1-${idx}`} className="grid grid-cols-10 gap-4 p-4 border-x border-b border-gray-200">
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
         </div>
+      ))}
+
+      {/* Party Total Row */}
+      <div className="grid grid-cols-10 gap-4 p-4 bg-green-50 border-x border-b border-gray-200">
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+      </div>
+
+      {/* Table Rows - Party 2 */}
+      {[...Array(2)].map((_, idx) => (
+        <div key={`row2-${idx}`} className="grid grid-cols-10 gap-4 p-4 border-x border-b border-gray-200">
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+          <div className="h-3 bg-gray-200 rounded col-span-1"></div>
+        </div>
+      ))}
+
+      {/* NP Badge Row */}
+      <div className="grid grid-cols-10 gap-4 p-4 bg-yellow-50 border-x border-b border-gray-200">
+        <div className="h-6 w-10 bg-yellow-300 rounded"></div>
+        <div className="col-span-9"></div>
+      </div>
+
+      {/* Party Total Row */}
+      <div className="grid grid-cols-10 gap-4 p-4 bg-green-50 border-x border-b border-gray-200 rounded-b-lg">
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
+        <div className="h-3 bg-green-300 rounded col-span-1"></div>
       </div>
     </div>
   );

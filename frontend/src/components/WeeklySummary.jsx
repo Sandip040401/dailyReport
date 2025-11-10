@@ -5,7 +5,7 @@ import Loader from "./Loader";
 
 const num = (v) => (v ?? 0).toLocaleString();
 
-export default function WeeklySummary({ data, expenses = [] ,onDataUpdate }) {
+export default function WeeklySummary({ data, expenses = [] }) {
   const [bankCellColors, setBankCellColors] = useState({});
   const [userRole, setUserRole] = useState("employee");
   const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +19,6 @@ export default function WeeklySummary({ data, expenses = [] ,onDataUpdate }) {
       setLoadingMessage("Authenticating user...");
 
       const token = localStorage.getItem("payment-token");
-      console.log(token);
 
       if (!token) {
         setUserRole("employee");
@@ -62,7 +61,8 @@ export default function WeeklySummary({ data, expenses = [] ,onDataUpdate }) {
   }, [data]);
 
   // Toggle and save bank color (admin only)
-const toggleBankColor = async (
+  // Toggle and save bank color (admin only)
+  const toggleBankColor = async (
     key,
     partyId,
     weekNumber,
@@ -76,12 +76,11 @@ const toggleBankColor = async (
     const currentColor = bankCellColors[key] === "red" ? "red" : "green";
     const newColor = currentColor === "red" ? "green" : "red";
 
-    // Optimistic update with loading state
+    // Set loading state WITHOUT updating the color
     setUpdatingKey(key);
-    setBankCellColors((prev) => ({ ...prev, [key]: newColor }));
 
     try {
-      await bankColorAPI.updateBankColor({
+      const response = await bankColorAPI.updateBankColor({
         partyId,
         weekNumber,
         weekYear,
@@ -91,14 +90,14 @@ const toggleBankColor = async (
         paymentType: paymentType || "weekly",
       });
 
-      // Trigger data refresh from parent (Index page)
-      if (onDataUpdate) {
-        await onDataUpdate();
+      // ONLY update color if API returns a valid color
+      if (response?.data?.color) {
+        setBankCellColors((prev) => ({ ...prev, [key]: response.data.color }));
       }
+      // If no color in response, DO NOT change the UI color at all
     } catch (error) {
       console.error("Error updating bank color:", error);
-      // Revert on error
-      setBankCellColors((prev) => ({ ...prev, [key]: currentColor }));
+      // No revert needed since we never changed it optimistically
     } finally {
       setUpdatingKey(null);
     }

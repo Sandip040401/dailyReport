@@ -52,6 +52,7 @@ export const updateBankColor = async (req, res) => {
     const partyObjectId = new mongoose.Types.ObjectId(partyId);
 
     let updatedDoc;
+    let savedColor; // Store the saved color to return
 
     // Handle different payment types
     if (paymentType === 'range') {
@@ -70,6 +71,7 @@ export const updateBankColor = async (req, res) => {
           { $set: { partyTotalBankColor: color } },
           { new: true, sort: { createdAt: -1 } }
         );
+        savedColor = updatedDoc?.partyTotalBankColor;
       } else {
         // Parse the date range
         const { startDate, endDate } = parseDateRange(paymentDate);
@@ -115,7 +117,7 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
-        // ✅ Use findOneAndUpdate with positional operator to update specific array element
+        // Update specific array element
         updatedDoc = await MultiDayPayment.findOneAndUpdate(
           { 
             _id: multiDayDoc._id,
@@ -125,6 +127,13 @@ export const updateBankColor = async (req, res) => {
           { $set: { 'paymentRanges.$.bankColorStatus': color } },
           { new: true }
         );
+
+        // Extract the saved color from the updated range
+        const updatedRange = updatedDoc?.paymentRanges.find(range => 
+          datesMatch(range.startDate, startDateObj) && 
+          datesMatch(range.endDate, endDateObj)
+        );
+        savedColor = updatedRange?.bankColorStatus;
       }
 
       if (!updatedDoc) {
@@ -151,8 +160,9 @@ export const updateBankColor = async (req, res) => {
           { $set: { partyTotalBankColor: color } },
           { new: true, sort: { createdAt: -1 } }
         );
+        savedColor = updatedDoc?.partyTotalBankColor;
       } else {
-        // ✅ Use dot notation to update only bankColorStatus in the Map
+        // Use dot notation to update only bankColorStatus in the Map
         updatedDoc = await WeeklyPayment.findOneAndUpdate(
           { 
             party: partyObjectId,
@@ -161,6 +171,9 @@ export const updateBankColor = async (req, res) => {
           { $set: { [`payments.${paymentDate}.bankColorStatus`]: color } },
           { new: true }
         );
+
+        // Extract the saved color from the Map
+        savedColor = updatedDoc?.payments?.get(paymentDate)?.bankColorStatus;
       }
 
       if (!updatedDoc) {
@@ -178,10 +191,13 @@ export const updateBankColor = async (req, res) => {
       });
     }
 
+    // Return the saved color from the database
     res.json({
       success: true,
       message: 'Bank color updated successfully',
-      data: updatedDoc,
+      data: {
+        color: savedColor || color // Fallback to requested color if extraction fails
+      }
     });
 
   } catch (error) {
