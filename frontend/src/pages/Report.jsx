@@ -9,11 +9,14 @@ const toISO = (d) => d.toISOString().slice(0, 10);
 const num = (v) => (v ?? 0).toLocaleString();
 
 export const Report = () => {
-  const [pickedDate, setPickedDate] = useState(new Date());
+  // UPDATED: Initialize with current date to show current week by default
+  const [pickedDate, setPickedDate] = useState(() => new Date());
+  
   const { weekStart, weekEnd } = useMemo(
     () => getIsoWeekBoundsFromDate(pickedDate),
     [pickedDate]
   );
+  
   const [weeklyData, setWeeklyData] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,9 +48,29 @@ export const Report = () => {
     return () => { cancelled = true; };
   }, [weekStart, weekEnd]);
 
+  // UPDATED: Sort expenses by date (most recent first)
+  const sortedExpenses = useMemo(() => {
+    if (!Array.isArray(expenses)) return [];
+    return [...expenses].sort((a, b) => {
+      const dateA = new Date(a.expenseDate);
+      const dateB = new Date(b.expenseDate);
+      return dateB - dateA; // Descending order (most recent first)
+    });
+  }, [expenses]);
+
+  // UPDATED: Sort parties by partyCode
+  const sortedParties = useMemo(() => {
+    const parties = weeklyData?.parties || [];
+    return [...parties].sort((a, b) => {
+      const codeA = a.partyCode || '';
+      const codeB = b.partyCode || '';
+      return codeA.localeCompare(codeB);
+    });
+  }, [weeklyData]);
+
   // Aggregate all parties (matches your existing logic)
   const grand = useMemo(() => {
-    const parties = weeklyData?.parties || [];
+    const parties = sortedParties;
     const acc = {
       paymentAmount: 0,
       pwt: 0,
@@ -90,7 +113,7 @@ export const Report = () => {
       acc.npAmount += subtotal.npAmount;
     }
     return acc;
-  }, [weeklyData]);
+  }, [sortedParties]);
 
   const totalExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return 0;
@@ -114,6 +137,13 @@ export const Report = () => {
     setPickedDate(next);
   };
 
+  // UPDATED: Check if viewing current week
+  const isCurrentWeek = useMemo(() => {
+    const today = new Date();
+    const { weekStart: currentWeekStart } = getIsoWeekBoundsFromDate(today);
+    return toISO(weekStart) === toISO(currentWeekStart);
+  }, [weekStart]);
+
   const StatCard = ({ title, value, icon: Icon, accent = 'emerald' }) => (
     <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
       <div className={`absolute inset-x-0 top-0 h-1 bg-${accent}-500`} />
@@ -135,7 +165,14 @@ export const Report = () => {
       <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Weekly Report</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Weekly Report
+              {isCurrentWeek && (
+                <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                  Current Week
+                </span>
+              )}
+            </h1>
             <p className="text-sm text-gray-600">
               {weekStart.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} — {weekEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} (Mon–Sun)
             </p>
@@ -149,7 +186,12 @@ export const Report = () => {
             </button>
             <button
               onClick={() => setPickedDate(new Date())}
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium shadow"
+              disabled={isCurrentWeek}
+              className={`px-4 py-2 rounded-lg text-sm font-medium shadow transition-colors ${
+                isCurrentWeek
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+              }`}
             >
               Today
             </button>

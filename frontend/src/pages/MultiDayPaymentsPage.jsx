@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { paymentAPI, partyAPI } from "../lib/api";
+import { paymentAPI, partyAPI, authAPI } from "../lib/api";
 
 // ============================================================================
 // DATE-ONLY UTILITIES (No timezone conversions - imported from dateUtils)
@@ -261,6 +261,40 @@ export default function MultiDayPaymentsPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // NEW: Role-based authentication state
+  const [userRole, setUserRole] = useState("employee");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading...");
+
+  // NEW: Fetch user role on component mount
+  useEffect(() => {
+    const fetchRole = async () => {
+      setIsLoading(true);
+      setLoadingMessage("Authenticating user...");
+
+      const token = localStorage.getItem("payment-token");
+      console.log(token);
+
+      if (!token) {
+        setUserRole("employee");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const role = await authAPI.role(token);
+        setUserRole(role.role);
+      } catch (error) {
+        console.error("Error fetching role:", error);
+        setUserRole("employee");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRole();
+  }, []);
+
   // Load parties
   useEffect(() => {
     const run = async () => {
@@ -380,24 +414,16 @@ export default function MultiDayPaymentsPage() {
       const isCurrentlySelected = prev.includes(partyId);
 
       if (!isCurrentlySelected) {
-        // Party is being added - create two default rows automatically
+        // Party is being added - check if rows already exist from DB
         setRowsByParty((prevRows) => {
           const existing = prevRows[partyId];
+          // Only auto-create row if NO rows exist (not even from DB)
           if (!existing || existing.length === 0) {
-            // Auto-create two rows with split dates
             const weekStartDate = fromYMD(selectedWeekStart);
-
-            // First entry: Monday to Wednesday
             const firstStart = toYMD(weekStartDate);
             const firstEndDate = new Date(weekStartDate);
             firstEndDate.setDate(firstEndDate.getDate() + 2);
             const firstEnd = toYMD(firstEndDate);
-
-            // Second entry: Thursday to Sunday
-            const secondStartDate = new Date(weekStartDate);
-            secondStartDate.setDate(secondStartDate.getDate() + 3);
-            const secondStart = toYMD(secondStartDate);
-            const secondEnd = selectedWeekEnd;
 
             return {
               ...prevRows,
@@ -406,23 +432,6 @@ export default function MultiDayPaymentsPage() {
                   id: crypto.randomUUID(),
                   startDate: firstStart,
                   endDate: firstEnd,
-                  fields: {
-                    paymentAmount: "",
-                    pwt: "",
-                    cash: "",
-                    bank: "",
-                    due: "",
-                    atd: "",
-                  },
-                  paymentMode: "MIXED",
-                  notes: "",
-                  temp: true,
-                  editingDate: false,
-                },
-                {
-                  id: crypto.randomUUID(),
-                  startDate: secondStart,
-                  endDate: secondEnd,
                   fields: {
                     paymentAmount: "",
                     pwt: "",
@@ -566,64 +575,53 @@ export default function MultiDayPaymentsPage() {
     });
   };
 
-  // New rows default to selected week range
+  // Add only ONE row based on remaining days
   const addRow = (partyId) => {
     setRowsByParty((prev) => {
       const next = { ...(prev || {}) };
       const arr = next[partyId] ? [...next[partyId]] : [];
 
-      // Calculate split dates based on selected week
-      const weekStartDate = fromYMD(selectedWeekStart);
+      const existingRanges = arr.map((r) => ({
+        start: r.startDate,
+        end: r.endDate,
+      }));
 
-      // First entry: Monday to Wednesday (days 0-2)
-      const firstStart = toYMD(weekStartDate);
-      const firstEndDate = new Date(weekStartDate);
-      firstEndDate.setDate(firstEndDate.getDate() + 2); // +2 days = Wednesday
-      const firstEnd = toYMD(firstEndDate);
+      existingRanges.sort((a, b) => a.start.localeCompare(b.start));
 
-      // Second entry: Thursday to Sunday (days 3-6)
-      const secondStartDate = new Date(weekStartDate);
-      secondStartDate.setDate(secondStartDate.getDate() + 3); // +3 days = Thursday
-      const secondStart = toYMD(secondStartDate);
-      const secondEnd = selectedWeekEnd; // Sunday
+      let newStartDate, newEndDate;
 
-      // Add first row (Mon-Wed)
-      arr.push({
-        id: crypto.randomUUID(),
-        startDate: firstStart,
-        endDate: firstEnd,
-        fields: {
-          paymentAmount: "",
-          pwt: "",
-          cash: "",
-          bank: "",
-          due: "",
-          atd: "",
-        },
-        paymentMode: "MIXED",
-        notes: "",
-        temp: true,
-        editingDate: false,
-      });
+      if (existingRanges.length === 0) {
+        newStartDate = selectedWeekStart;
+        const endDate = fromYMD(selectedWeekStart);
+        endDate.setDate(endDate.getDate() + 2);
+        newEndDate = toYMD(endDate);
+      } else {
+        const lastRow = existingRanges[existingRanges.length - 1];
+        const nextStart = fromYMD(lastRow.end);
+        nextStart.setDate(nextStart.getDate() + 1);
+        newStartDate = toYMD(nextStart);
+        newEndDate = selectedWeekEnd;
+      }
 
-      // Add second row (Thu-Sun)
-      arr.push({
-        id: crypto.randomUUID(),
-        startDate: secondStart,
-        endDate: secondEnd,
-        fields: {
-          paymentAmount: "",
-          pwt: "",
-          cash: "",
-          bank: "",
-          due: "",
-          atd: "",
-        },
-        paymentMode: "MIXED",
-        notes: "",
-        temp: true,
-        editingDate: false,
-      });
+      if (newStartDate <= selectedWeekEnd) {
+        arr.push({
+          id: crypto.randomUUID(),
+          startDate: newStartDate,
+          endDate: newEndDate,
+          fields: {
+            paymentAmount: "",
+            pwt: "",
+            cash: "",
+            bank: "",
+            due: "",
+            atd: "",
+          },
+          paymentMode: "MIXED",
+          notes: "",
+          temp: true,
+          editingDate: false,
+        });
+      }
 
       next[partyId] = arr;
       return next;
@@ -645,7 +643,7 @@ export default function MultiDayPaymentsPage() {
     setError("");
   };
 
-  // Validate date edits: within selected week and exactly 7-day span
+  // Validate date edits: within selected week
   const updateRowDate = (partyId, rowId, next) => {
     const newStart = next.startDate;
     const newEnd = next.endDate;
@@ -676,8 +674,8 @@ export default function MultiDayPaymentsPage() {
       const start = fromYMD(newStart);
       const end = fromYMD(newEnd);
       const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
-      if (diffDays !== 6) {
-        setError("Date range must be exactly 7 days (6-day difference)");
+      if (diffDays < 0) {
+        setError("End date must be after start date");
         return;
       }
     }
@@ -768,7 +766,6 @@ export default function MultiDayPaymentsPage() {
       setModifiedRows({});
       setEditingCell(null);
 
-      // Refresh within selected week
       const refreshed = {};
       const npRefreshed = {};
       for (const pid of selectedParties) {
@@ -903,7 +900,7 @@ export default function MultiDayPaymentsPage() {
         className={`border border-gray-500 px-3 py-2 text-right cursor-pointer transition-colors ${
           isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
         }`}
-        onClick={() => handleCellClick(partyId, row, colIndex, globalIndex)}
+        onClick={() => handleCellClick(partyId, row, colIndex, globalRowIndex)}
       >
         {isEditing && isCurrentCell ? (
           <input
@@ -931,6 +928,14 @@ export default function MultiDayPaymentsPage() {
       </td>
     );
   };
+
+  // NEW: Check if admin
+  const isAdmin = userRole === "admin";
+
+  // Show initial authentication loading
+  if (isLoading) {
+    return <LoadingOverlay message={loadingMessage} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1045,6 +1050,7 @@ export default function MultiDayPaymentsPage() {
 
                       return (
                         <React.Fragment key={partyId}>
+                          {/* UPDATED: Conditionally show ACT column header for admins only */}
                           <tr className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-500">
                             <th className="border border-gray-500 px-4 py-3 text-left text-xs font-bold text-gray-800 w-40">
                               DATE RANGE
@@ -1073,9 +1079,11 @@ export default function MultiDayPaymentsPage() {
                             <th className="border border-gray-500 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
                               TOTAL
                             </th>
-                            <th className="border border-gray-500 px-4 py-3 text-center text-xs font-bold text-gray-800 w-24">
-                              ACT
-                            </th>
+                            {isAdmin && (
+                              <th className="border border-gray-500 px-4 py-3 text-center text-xs font-bold text-gray-800 w-24">
+                                ACT
+                              </th>
+                            )}
                           </tr>
 
                           {rows.map((row) => {
@@ -1205,32 +1213,43 @@ export default function MultiDayPaymentsPage() {
                                   </span>
                                 </td>
 
-                                <td className="border border-gray-500 px-4 py-2 text-center">
-                                  <div className="inline-flex items-center gap-2">
-                                    <button
-                                      onClick={() => deleteRow(partyId, row)}
-                                      className="inline-flex items-center justify-center w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                                      title="Delete"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
+                                {/* UPDATED: Show ACT column only for admins */}
+                                {isAdmin && (
+                                  <td className="border border-gray-500 px-4 py-2 text-center">
+                                    <div className="inline-flex items-center gap-2">
+                                      <button
+                                        onClick={() => deleteRow(partyId, row)}
+                                        className="inline-flex items-center justify-center w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
                               </tr>
                             );
                           })}
 
-                          <tr>
-                            <td colSpan={10} className="px-4 py-3">
-                              <button
-                                onClick={() => addRow(partyId)}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded"
-                              >
-                                <Plus className="w-4 h-4" />
-                                <span>Add Row for {partyCode}</span>
-                              </button>
-                            </td>
-                          </tr>
+                          {/* Add Row Button */}
+                          {(() => {
+                            if (rows.length < 2) {
+                              return (
+                                <tr>
+                                  <td colSpan={isAdmin ? 10 : 9} className="px-4 py-3">
+                                    <button
+                                      onClick={() => addRow(partyId)}
+                                      className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      <span>Add Row for {partyCode}</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            return null;
+                          })()}
 
                           {/* NP Weekly Row */}
                           <tr className="border-t border-gray-500 bg-white">
@@ -1260,8 +1279,10 @@ export default function MultiDayPaymentsPage() {
                             <td className="border border-gray-500 px-4 py-2 text-right">
                               <input
                                 type="number"
-                                onWheel={(e) => { e.preventDefault(); e.currentTarget.blur(); }}
-
+                                onWheel={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                }}
                                 value={weeklyNPByParty[partyId]?.amount ?? ""}
                                 onChange={(e) =>
                                   setWeeklyNPByParty((prev) => ({
@@ -1281,9 +1302,8 @@ export default function MultiDayPaymentsPage() {
                             </td>
                             <td
                               className="border border-gray-500 px-4 py-2"
-                              colSpan={6}
+                              colSpan={isAdmin ? 7 : 6}
                             ></td>
-                            <td className="border border-gray-500 px-4 py-2"></td>
                           </tr>
 
                           {/* Party Total Row */}
@@ -1321,12 +1341,12 @@ export default function MultiDayPaymentsPage() {
                                 totals.atd
                               ).toLocaleString()}
                             </td>
-                            <td className="border border-gray-500 px-4 py-3"></td>
+                            {isAdmin && <td className="border border-gray-500 px-4 py-3"></td>}
                           </tr>
 
                           {pIndex < selectedParties.length - 1 && (
                             <tr className="h-1 bg-gray-100">
-                              <td colSpan="10"></td>
+                              <td colSpan={isAdmin ? 10 : 9}></td>
                             </tr>
                           )}
                         </React.Fragment>
@@ -1368,7 +1388,7 @@ export default function MultiDayPaymentsPage() {
                           grandTotals.atd
                         ).toLocaleString()}
                       </td>
-                      <td className="border border-gray-500 px-4 py-3"></td>
+                      {isAdmin && <td className="border border-gray-500 px-4 py-3"></td>}
                     </tr>
                   </tbody>
                 </table>
