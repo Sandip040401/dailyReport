@@ -5,7 +5,7 @@ import Loader from "./Loader";
 
 const num = (v) => (v ?? 0).toLocaleString();
 
-export default function WeeklySummary({ data, expenses = [] }) {
+export default function WeeklySummary({ data, expenses = [] ,onDataUpdate }) {
   const [bankCellColors, setBankCellColors] = useState({});
   const [userRole, setUserRole] = useState("employee");
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
   }, [data]);
 
   // Toggle and save bank color (admin only)
-  const toggleBankColor = async (
+const toggleBankColor = async (
     key,
     partyId,
     weekNumber,
@@ -73,7 +73,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
   ) => {
     if (userRole !== "admin" || updatingKey) return;
 
-    const currentColor = bankCellColors[key] || "red";
+    const currentColor = bankCellColors[key] === "red" ? "red" : "green";
     const newColor = currentColor === "red" ? "green" : "red";
 
     // Optimistic update with loading state
@@ -90,6 +90,11 @@ export default function WeeklySummary({ data, expenses = [] }) {
         isPartyTotal: !!isPartyTotal,
         paymentType: paymentType || "weekly",
       });
+
+      // Trigger data refresh from parent (Index page)
+      if (onDataUpdate) {
+        await onDataUpdate();
+      }
     } catch (error) {
       console.error("Error updating bank color:", error);
       // Revert on error

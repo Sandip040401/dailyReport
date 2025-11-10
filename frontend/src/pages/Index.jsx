@@ -6,7 +6,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
-import { dashboardAPI, expenseAPI } from '../lib/api'; // Add expenseAPI
+import { dashboardAPI, expenseAPI } from '../lib/api';
 
 const toISO = (d) => d.toISOString().slice(0, 10);
 
@@ -17,79 +17,67 @@ export default function Index() {
     [pickedDate]
   );
   const [weeklyData, setWeeklyData] = useState(null);
-  const [expenses, setExpenses] = useState([]); // NEW: Store expenses
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // NEW: Force re-render key
 
-useEffect(() => {
-  let cancelled = false;
-
-  (async () => {
+  // Extract fetch logic into reusable function
+  const fetchWeekData = async () => {
     try {
       setLoading(true);
       setError('');
       
-      // Fetch both payments and expenses
       const [paymentsRes, expensesRes] = await Promise.all([
         dashboardAPI.getRangeSummary(weekStart, weekEnd),
         expenseAPI.getExpenses({ startDate: weekStart, endDate: weekEnd })
       ]);
 
-      if (!cancelled) {
-        if (paymentsRes?.success) {
-          // Filter and sort payments for current week only
-          const filteredData = {
-            ...paymentsRes,
-            parties: paymentsRes.parties?.map(party => ({
-              ...party,
-              payments: party.payments
-                ?.filter(payment => {
-                  // Filter: only payments within the week range
-                  if (!payment.date) return false;
-                  
-                  // Handle multi-date format (e.g., "2025-11-10 - 2025-11-12")
-                  const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
-                  const paymentDate = new Date(dates[0]);
-                  const weekStartDate = new Date(weekStart);
-                  const weekEndDate = new Date(weekEnd);
-                  
-                  return paymentDate >= weekStartDate && paymentDate <= weekEndDate;
-                })
-                .sort((a, b) => {
-                  // Sort by date ascending
-                  const dateA = new Date(a.date?.split(/\s*[-–]\s*/)[0] || 0);
-                  const dateB = new Date(b.date?.split(/\s*[-–]\s*/)[0] || 0);
-                  return dateA - dateB;
-                })
-            }))
-            .filter(party => party.payments && party.payments.length > 0) // Remove parties with no payments
-          };
-          
-          setWeeklyData(filteredData);
-        } else {
-          setWeeklyData({ parties: [] });
-        }
+      if (paymentsRes?.success) {
+        const filteredData = {
+          ...paymentsRes,
+          parties: paymentsRes.parties?.map(party => ({
+            ...party,
+            payments: party.payments
+              ?.filter(payment => {
+                if (!payment.date) return false;
+                const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
+                const paymentDate = new Date(dates[0]);
+                const weekStartDate = new Date(weekStart);
+                const weekEndDate = new Date(weekEnd);
+                return paymentDate >= weekStartDate && paymentDate <= weekEndDate;
+              })
+              .sort((a, b) => {
+                const dateA = new Date(a.date?.split(/\s*[-–]\s*/)[0] || 0);
+                const dateB = new Date(b.date?.split(/\s*[-–]\s*/)[0] || 0);
+                return dateA - dateB;
+              })
+          }))
+          .filter(party => party.payments && party.payments.length > 0)
+        };
         
-        // Set expenses data (already filtered by API)
-        setExpenses(expensesRes?.data || []);
-      }
-    } catch (e) {
-      if (!cancelled) {
-        console.error('Data fetch error', e);
-        setError('Failed to load data');
+        setWeeklyData(filteredData);
+      } else {
         setWeeklyData({ parties: [] });
-        setExpenses([]);
       }
+      
+      setExpenses(expensesRes?.data || []);
+      setRefreshKey(prev => prev + 1); // Increment to force re-render
+    } catch (e) {
+      console.error('Data fetch error', e);
+      setError('Failed to load data');
+      setWeeklyData({ parties: [] });
+      setExpenses([]);
     } finally {
-      if (!cancelled) setLoading(false);
+      setLoading(false);
     }
-  })();
-
-  return () => {
-    cancelled = true;
   };
-}, [weekStart, weekEnd]);
+
+  // Initial load and week change
+  useEffect(() => {
+    fetchWeekData();
+  }, [weekStart, weekEnd]);
 
   const jumpByDays = (days) => {
     const next = new Date(weekStart);
@@ -153,7 +141,12 @@ useEffect(() => {
             <p className="text-red-700 font-medium">{error}</p>
           </div>
         ) : (
-          <WeeklySummary data={weeklyData} expenses={expenses} /> 
+          <WeeklySummary 
+            key={refreshKey}  // Force unmount/remount on data update
+            data={weeklyData} 
+            expenses={expenses}
+            onDataUpdate={fetchWeekData}  // Pass callback to child
+          /> 
         )}
       </div>
     </div>
