@@ -18,8 +18,8 @@ const parseDateRange = (rangeString) => {
   }
   
   return {
-    startDate: dates[0], // Return as string
-    endDate: dates[1]    // Return as string
+    startDate: dates[0],
+    endDate: dates[1]
   };
 };
 
@@ -63,23 +63,21 @@ export const updateBankColor = async (req, res) => {
         });
       }
 
-      let multiDayDoc;
-
       if (isPartyTotal) {
-        // For party total, get the most recent document
-        multiDayDoc = await MultiDayPayment.findOne({
-          party: partyObjectId
-        }).sort({ createdAt: -1 });
+        // Update party total bank color
+        updatedDoc = await MultiDayPayment.findOneAndUpdate(
+          { party: partyObjectId },
+          { $set: { partyTotalBankColor: color } },
+          { new: true, sort: { createdAt: -1 } }
+        );
       } else {
-        // Parse the date range to get string dates
+        // Parse the date range
         const { startDate, endDate } = parseDateRange(paymentDate);
-        
-        // Create Date objects for querying (start of day)
         const startDateObj = new Date(startDate + 'T00:00:00.000Z');
         const endDateObj = new Date(endDate + 'T00:00:00.000Z');
         
-        // Query to find document with matching date range in paymentRanges array
-        multiDayDoc = await MultiDayPayment.findOne({
+        // Find document with matching range
+        const multiDayDoc = await MultiDayPayment.findOne({
           party: partyObjectId,
           paymentRanges: {
             $elemMatch: {
@@ -88,26 +86,16 @@ export const updateBankColor = async (req, res) => {
             }
           }
         });
-      }
 
-      if (!multiDayDoc) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'MultiDayPayment not found',
-          debug: { partyId, paymentDate }
-        });
-      }
+        if (!multiDayDoc) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'MultiDayPayment not found',
+            debug: { partyId, paymentDate }
+          });
+        }
 
-      if (isPartyTotal) {
-        // Update party total bank color
-        multiDayDoc.partyTotalBankColor = color;
-      } else {
-        // Parse again for comparison
-        const { startDate, endDate } = parseDateRange(paymentDate);
-        const startDateObj = new Date(startDate + 'T00:00:00.000Z');
-        const endDateObj = new Date(endDate + 'T00:00:00.000Z');
-        
-        // Find the matching payment range
+        // Find the matching payment range index
         const rangeIndex = multiDayDoc.paymentRanges.findIndex(range => 
           datesMatch(range.startDate, startDateObj) && 
           datesMatch(range.endDate, endDateObj)
@@ -127,14 +115,27 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
-        // Update the bank color status for the found range
-        multiDayDoc.paymentRanges[rangeIndex].bankColorStatus = color;
+        // ✅ Use findOneAndUpdate with positional operator to update specific array element
+        updatedDoc = await MultiDayPayment.findOneAndUpdate(
+          { 
+            _id: multiDayDoc._id,
+            'paymentRanges.startDate': startDateObj,
+            'paymentRanges.endDate': endDateObj
+          },
+          { $set: { 'paymentRanges.$.bankColorStatus': color } },
+          { new: true }
+        );
       }
 
-      updatedDoc = await multiDayDoc.save();
+      if (!updatedDoc) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Failed to update MultiDayPayment' 
+        });
+      }
 
     } else if (paymentType === 'daily' || paymentType === 'weekly') {
-      // DAILY/WEEKLY PAYMENT (both use WeeklyPayment model)
+      // DAILY/WEEKLY PAYMENT (WeeklyPayment model with Map)
       
       if (!isPartyTotal && !paymentDate) {
         return res.status(400).json({ 
@@ -143,54 +144,32 @@ export const updateBankColor = async (req, res) => {
         });
       }
 
-      // Query by date in payments Map using dot notation
-      let weeklyDoc;
-      
       if (isPartyTotal) {
-        // For party total, just get the most recent document for this party
-        weeklyDoc = await WeeklyPayment.findOne({
-          party: partyObjectId
-        }).sort({ createdAt: -1 });
+        // Update party total bank color
+        updatedDoc = await WeeklyPayment.findOneAndUpdate(
+          { party: partyObjectId },
+          { $set: { partyTotalBankColor: color } },
+          { new: true, sort: { createdAt: -1 } }
+        );
       } else {
-        // Find document where this specific date exists in payments Map
-        weeklyDoc = await WeeklyPayment.findOne({
-          party: partyObjectId,
-          [`payments.${paymentDate}`]: { $exists: true }
-        });
+        // ✅ Use dot notation to update only bankColorStatus in the Map
+        updatedDoc = await WeeklyPayment.findOneAndUpdate(
+          { 
+            party: partyObjectId,
+            [`payments.${paymentDate}`]: { $exists: true }
+          },
+          { $set: { [`payments.${paymentDate}.bankColorStatus`]: color } },
+          { new: true }
+        );
       }
 
-      if (!weeklyDoc) {
+      if (!updatedDoc) {
         return res.status(404).json({ 
           success: false, 
           message: 'WeeklyPayment not found for this date',
           debug: { partyId, paymentDate }
         });
       }
-
-      if (isPartyTotal) {
-        // Update party total bank color
-        weeklyDoc.partyTotalBankColor = color;
-      } else {
-        // Update specific date payment color
-        const paymentEntry = weeklyDoc.payments.get(paymentDate);
-        
-        if (!paymentEntry) {
-          return res.status(404).json({ 
-            success: false, 
-            message: 'Payment entry not found for this date',
-            debug: { 
-              paymentDate, 
-              availableDates: Array.from(weeklyDoc.payments.keys()) 
-            }
-          });
-        }
-
-        // Update the bank color status
-        paymentEntry.bankColorStatus = color;
-        weeklyDoc.payments.set(paymentDate, paymentEntry);
-      }
-
-      updatedDoc = await weeklyDoc.save();
 
     } else {
       return res.status(400).json({ 
