@@ -17,16 +17,16 @@ export default function WeeklySummary({ data, expenses = [] }) {
     const fetchRole = async () => {
       setIsLoading(true);
       setLoadingMessage("Authenticating user...");
-      
+
       const token = localStorage.getItem("payment-token");
       console.log(token);
-      
+
       if (!token) {
         setUserRole("employee");
         setIsLoading(false);
         return;
       }
-      
+
       try {
         const role = await authAPI.role(token);
         setUserRole(role.role);
@@ -46,7 +46,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
     if (!data?.parties) return;
 
     setLoadingMessage("Loading bank colors...");
-    
+
     const initialColors = {};
     data.parties.forEach((party) => {
       party.payments.forEach((payment, idx) => {
@@ -183,11 +183,12 @@ export default function WeeklySummary({ data, expenses = [] }) {
   const weekYear = data?.weekYear;
 
   // OPTIMIZED: Larger fonts, compact widths
-  const cellBase = "px-1.5 md:px-2 lg:px-3 xl:px-4 py-1.5 md:py-2 border-b border-gray-200 align-middle transition-colors duration-150";
+  const cellBase =
+    "px-1.5 md:px-2 lg:px-3 xl:px-4 py-1.5 md:py-2 border-b border-gray-200 align-middle transition-colors duration-150";
   const dateCell = `${cellBase} text-xs sm:text-sm md:text-base`; // LARGER font for date
   const partyCell = `${cellBase} text-xs sm:text-sm md:text-base`; // LARGER font for party
   const dataCell = `${cellBase} text-xs sm:text-sm md:text-base whitespace-nowrap`; // LARGER font for numbers
-  
+
   const cellLeft = "text-left";
   const cellRight = "text-right";
   const stickyBase = "sticky bg-white";
@@ -250,14 +251,10 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   : "bg-blue-100 text-blue-800"
               }`}
             >
-              {userRole === "admin"
-                ? "👑 ADMIN"
-                : "👤 EMPLOYEE"}
+              {userRole === "admin" ? "👑 ADMIN" : "👤 EMPLOYEE"}
             </span>
             <span className="text-[10px] md:text-xs lg:text-sm text-gray-600">
-              {userRole === "admin"
-                ? "Click bank cells"
-                : "View only"}
+              {userRole === "admin" ? "Click bank cells" : "View only"}
             </span>
           </div>
         </div>
@@ -367,13 +364,26 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     key={`${party.partyId}-payment-${paymentIndex}`}
                     className={rowCls(payment.type)}
                   >
-                    <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                    <td
+                      className={`${dateCell} ${cellLeft} ${stickyDate} w-20 sm:w-24 md:w-28 lg:w-32 xl:w-36`}
+                    >
                       <div className="flex flex-col leading-tight">
-                        <span className="font-bold text-gray-900 break-words">
-                          {payment.date || "—"}
-                        </span>
+                        {payment.date ? (
+                          payment.date
+                            .split(/\s*[-–]\s*(?=\d{4})/)
+                            .map((date, idx) => (
+                              <span
+                                key={idx}
+                                className="font-bold text-gray-900 whitespace-nowrap"
+                              >
+                                {date.trim()}
+                              </span>
+                            ))
+                        ) : (
+                          <span className="font-bold text-gray-900">—</span>
+                        )}
                         {payment.source && (
-                          <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-wide break-words">
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-wide whitespace-nowrap">
                             {payment.source}
                           </span>
                         )}
@@ -400,10 +410,14 @@ export default function WeeklySummary({ data, expenses = [] }) {
                       </span>
                     </td>
                     <td className={`${dataCell} ${cellRight}`}>
-                      <span className="text-gray-900 font-bold">{num(payment.pwt)}</span>
+                      <span className="text-gray-900 font-bold">
+                        {num(payment.pwt)}
+                      </span>
                     </td>
                     <td className={`${dataCell} ${cellRight}`}>
-                      <span className="text-gray-900 font-bold">{num(payment.cash)}</span>
+                      <span className="text-gray-900 font-bold">
+                        {num(payment.cash)}
+                      </span>
                     </td>
                     <td
                       className={`${dataCell} ${cellRight}`}
@@ -443,10 +457,14 @@ export default function WeeklySummary({ data, expenses = [] }) {
                       )}
                     </td>
                     <td className={`${dataCell} ${cellRight}`}>
-                      <span className="text-gray-900 font-bold">{num(payment.due)}</span>
+                      <span className="text-gray-900 font-bold">
+                        {num(payment.due)}
+                      </span>
                     </td>
                     <td className={`${dataCell} ${cellRight}`}>
-                      <span className="text-gray-900 font-bold">{num(payment.tda)}</span>
+                      <span className="text-gray-900 font-bold">
+                        {num(payment.tda)}
+                      </span>
                     </td>
                     <td className={`${dataCell} ${cellRight} bg-blue-50/50`}>
                       <span className="font-bold text-blue-900 text-sm sm:text-base md:text-lg">
@@ -459,7 +477,9 @@ export default function WeeklySummary({ data, expenses = [] }) {
 
               {party.weeklyNP && (
                 <tr className={rowCls("weeklyNP")}>
-                  <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                  <td
+                    className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}
+                  >
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900 text-[9px] md:text-[10px] font-bold break-words">
                       NP
                     </span>
@@ -479,12 +499,26 @@ export default function WeeklySummary({ data, expenses = [] }) {
                       {num(party.weeklyNP.amount)}
                     </span>
                   </td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td
+                    className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}
+                  >
+                    —
+                  </td>
                 </tr>
               )}
 
@@ -504,32 +538,44 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     -
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.paymentAmount)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.pwt)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.cash)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.bank)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.due)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-emerald-300`}
+                >
                   <span className="font-bold text-emerald-700">
                     {num(party.partyTotal.tda)}
                   </span>
@@ -574,32 +620,44 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   All
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.paymentAmount)}
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.pwt)}
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.cash)}
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.bank)}
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.due)}
                 </span>
               </td>
-              <td className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}>
+              <td
+                className={`${dataCell} ${cellRight} border-t-4 border-blue-500`}
+              >
                 <span className="font-bold text-blue-800">
                   {num(grandTotal.tda)}
                 </span>
@@ -628,7 +686,9 @@ export default function WeeklySummary({ data, expenses = [] }) {
 
               {expenses.map((expense, idx) => (
                 <tr key={expense._id || idx} className={rowCls("expense")}>
-                  <td className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}>
+                  <td
+                    className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}
+                  >
                     <div className="flex flex-col leading-tight">
                       <span className="font-bold text-gray-900 break-words">
                         {new Date(expense.expenseDate).toLocaleDateString(
@@ -656,17 +716,31 @@ export default function WeeklySummary({ data, expenses = [] }) {
                       )}
                     </div>
                   </td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
                   <td className={`${dataCell} ${cellRight}`}>
                     <span className="text-red-600 font-bold">
                       {num(expense.expenseAmount)}
                     </span>
                   </td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} text-gray-400`}>—</td>
-                  <td className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}>—</td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td className={`${dataCell} ${cellRight} text-gray-400`}>
+                    —
+                  </td>
+                  <td
+                    className={`${dataCell} ${cellRight} bg-blue-50/50 text-gray-400`}
+                  >
+                    —
+                  </td>
                 </tr>
               ))}
 
@@ -686,17 +760,43 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     Tot Exp
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300`}
+                >
                   <span className="font-bold text-red-700">
                     -{num(totalExpenses)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}>—</td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-2 border-red-300 text-gray-400`}
+                >
+                  —
+                </td>
               </tr>
 
               <tr className={rowCls("finalCash")}>
@@ -715,17 +815,43 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     After
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500`}>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500`}
+                >
                   <span className="font-bold text-green-800 text-base sm:text-lg md:text-xl">
                     {num(finalCash)}
                   </span>
                 </td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
-                <td className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}>—</td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
+                <td
+                  className={`${dataCell} ${cellRight} border-t-4 border-green-500 text-gray-400`}
+                >
+                  —
+                </td>
               </tr>
             </>
           )}
