@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function Loader({ message = "Loading..." }) {
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
         {/* Spinner */}
         <div className="relative w-16 h-16">

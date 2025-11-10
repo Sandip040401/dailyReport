@@ -495,40 +495,43 @@ export default function MultiDayPaymentsPage() {
     });
   };
 
-const handleInputChange = (e) => {
-  const { name, value } = e.target;
-  
-  // Update formData immediately for the input field
-  setFormData(p => ({ 
-    ...p, 
-    [name]: value // Keep as string for controlled input
-  }));
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
 
-  if (editingCell) {
-    const { partyId, rowId } = editingCell;
-    const key = `${partyId}-${rowId}`;
-    
-    setModifiedRows(prev => {
-      const existing = prev[key]?.fields || {};
-      const nextFields = {
-        ...existing,
-        [name]: value === "" ? undefined : Number(value), // Convert to number for storage
-      };
-      
-      return {
-        ...prev,
-        [key]: {
-          partyId,
-          rowId,
-          fields: pickDefinedNumbers(nextFields),
-          startDate: prev[key]?.startDate ?? rowsByParty[partyId]?.find(r => r.id === rowId)?.startDate,
-          endDate: prev[key]?.endDate ?? rowsByParty[partyId]?.find(r => r.id === rowId)?.endDate,
-        },
-      };
-    });
-  }
-};
+    // Update formData immediately for the input field
+    setFormData((p) => ({
+      ...p,
+      [name]: value, // Keep as string for controlled input
+    }));
 
+    if (editingCell) {
+      const { partyId, rowId } = editingCell;
+      const key = `${partyId}-${rowId}`;
+
+      setModifiedRows((prev) => {
+        const existing = prev[key]?.fields || {};
+        const nextFields = {
+          ...existing,
+          [name]: value === "" ? undefined : Number(value), // Convert to number for storage
+        };
+
+        return {
+          ...prev,
+          [key]: {
+            partyId,
+            rowId,
+            fields: pickDefinedNumbers(nextFields),
+            startDate:
+              prev[key]?.startDate ??
+              rowsByParty[partyId]?.find((r) => r.id === rowId)?.startDate,
+            endDate:
+              prev[key]?.endDate ??
+              rowsByParty[partyId]?.find((r) => r.id === rowId)?.endDate,
+          },
+        };
+      });
+    }
+  };
 
   const handleKeyDown = (e) => {
     const k = e.key.toLowerCase();
@@ -596,18 +599,32 @@ const handleInputChange = (e) => {
       let newStartDate, newEndDate;
 
       if (existingRanges.length === 0) {
+        // No existing rows - create first row
         newStartDate = selectedWeekStart;
         const endDate = fromYMD(selectedWeekStart);
         endDate.setDate(endDate.getDate() + 2);
         newEndDate = toYMD(endDate);
       } else {
-        const lastRow = existingRanges[existingRanges.length - 1];
-        const nextStart = fromYMD(lastRow.end);
-        nextStart.setDate(nextStart.getDate() + 1);
-        newStartDate = toYMD(nextStart);
-        newEndDate = selectedWeekEnd;
+        // Check if there's a gap at the BEGINNING of the week
+        const firstExistingStart = existingRanges[0].start;
+
+        if (firstExistingStart > selectedWeekStart) {
+          // Gap exists at the beginning - fill it
+          newStartDate = selectedWeekStart;
+          const dayBeforeFirstRow = fromYMD(firstExistingStart);
+          dayBeforeFirstRow.setDate(dayBeforeFirstRow.getDate() - 1);
+          newEndDate = toYMD(dayBeforeFirstRow);
+        } else {
+          // No gap at beginning - add after last row
+          const lastRow = existingRanges[existingRanges.length - 1];
+          const nextStart = fromYMD(lastRow.end);
+          nextStart.setDate(nextStart.getDate() + 1);
+          newStartDate = toYMD(nextStart);
+          newEndDate = selectedWeekEnd;
+        }
       }
 
+      // Only add if the new start date is within the week range
       if (newStartDate <= selectedWeekEnd) {
         arr.push({
           id: crypto.randomUUID(),
@@ -626,6 +643,9 @@ const handleInputChange = (e) => {
           temp: true,
           editingDate: false,
         });
+
+        // Sort the array after adding the new row
+        arr.sort((a, b) => a.startDate.localeCompare(b.startDate));
       }
 
       next[partyId] = arr;
@@ -884,58 +904,57 @@ const handleInputChange = (e) => {
       year: "2-digit",
     });
 
-const renderCell = (
-  colIndex,
-  isEditing,
-  isCurrentCell,
-  row,
-  partyId,
-  globalRowIndex
-) => {
-  const fieldName = cellOrder[colIndex];
-  const modKey = `${partyId}-${row.id}`;
-  const modified = modifiedRows[modKey]?.fields || {};
-  const effective = { ...(row.fields || {}), ...modified };
-  const displayValue =
-    typeof effective?.[fieldName] === "number" ? effective[fieldName] : 0;
-  
-  // Convert to string for input value
-  const cellValue = String(formData[fieldName] ?? "");
+  const renderCell = (
+    colIndex,
+    isEditing,
+    isCurrentCell,
+    row,
+    partyId,
+    globalRowIndex
+  ) => {
+    const fieldName = cellOrder[colIndex];
+    const modKey = `${partyId}-${row.id}`;
+    const modified = modifiedRows[modKey]?.fields || {};
+    const effective = { ...(row.fields || {}), ...modified };
+    const displayValue =
+      typeof effective?.[fieldName] === "number" ? effective[fieldName] : 0;
 
-  return (
-    <td
-      className={`border border-gray-500 px-3 py-2 text-right cursor-pointer transition-colors ${
-        isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
-      }`}
-      onClick={() => handleCellClick(partyId, row, colIndex, globalRowIndex)}
-    >
-      {isEditing && isCurrentCell ? (
-        <input
-          type="number"
-          name={fieldName}
-          value={cellValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          onWheel={(e) => {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }}
-          className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
-        />
-      ) : (
-        <span
-          className={`text-md font-medium ${
-            displayValue ? "text-gray-900" : "text-gray-400"
-          }`}
-        >
-          {displayValue ? Number(displayValue).toLocaleString() : "-"}
-        </span>
-      )}
-    </td>
-  );
-};
+    // Convert to string for input value
+    const cellValue = String(formData[fieldName] ?? "");
 
+    return (
+      <td
+        className={`border border-gray-500 px-3 py-2 text-right cursor-pointer transition-colors ${
+          isCurrentCell ? "bg-emerald-100" : "hover:bg-gray-50"
+        }`}
+        onClick={() => handleCellClick(partyId, row, colIndex, globalRowIndex)}
+      >
+        {isEditing && isCurrentCell ? (
+          <input
+            type="number"
+            name={fieldName}
+            value={cellValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            onWheel={(e) => {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }}
+            className="w-full px-2 py-1 border-2 border-emerald-500 rounded text-md text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 text-right"
+          />
+        ) : (
+          <span
+            className={`text-md font-medium ${
+              displayValue ? "text-gray-900" : "text-gray-400"
+            }`}
+          >
+            {displayValue ? Number(displayValue).toLocaleString() : "-"}
+          </span>
+        )}
+      </td>
+    );
+  };
 
   // NEW: Check if admin
   const isAdmin = userRole === "admin";
@@ -1244,7 +1263,10 @@ const renderCell = (
                             if (rows.length < 2) {
                               return (
                                 <tr>
-                                  <td colSpan={isAdmin ? 10 : 9} className="px-4 py-3">
+                                  <td
+                                    colSpan={isAdmin ? 10 : 9}
+                                    className="px-4 py-3"
+                                  >
                                     <button
                                       onClick={() => addRow(partyId)}
                                       className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded"
@@ -1349,7 +1371,9 @@ const renderCell = (
                                 totals.atd
                               ).toLocaleString()}
                             </td>
-                            {isAdmin && <td className="border border-gray-500 px-4 py-3"></td>}
+                            {isAdmin && (
+                              <td className="border border-gray-500 px-4 py-3"></td>
+                            )}
                           </tr>
 
                           {pIndex < selectedParties.length - 1 && (
@@ -1396,7 +1420,9 @@ const renderCell = (
                           grandTotals.atd
                         ).toLocaleString()}
                       </td>
-                      {isAdmin && <td className="border border-gray-500 px-4 py-3"></td>}
+                      {isAdmin && (
+                        <td className="border border-gray-500 px-4 py-3"></td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
