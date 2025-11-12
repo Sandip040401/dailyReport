@@ -4,14 +4,6 @@ import { authAPI, bankColorAPI } from "../lib/api";
 import Loader from "./Loader";
 
 const num = (v) => (v ?? 0).toLocaleString();
-// Add at the very top of WeeklySummary component
-const renderCount = React.useRef(0);
-renderCount.current += 1;
-console.log(`\n🔄 WeeklySummary RENDER #${renderCount.current}`);
-console.log('Props changed:', { 
-  dataLength: data?.parties?.length,
-  expensesLength: expenses?.length 
-});
 
 export default function WeeklySummary({ data, expenses = [] }) {
   const [bankCellColors, setBankCellColors] = useState({});
