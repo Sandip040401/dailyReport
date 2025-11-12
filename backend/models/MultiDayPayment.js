@@ -11,7 +11,7 @@ const paymentEntrySchema = new mongoose.Schema(
     bank: { type: Number, default: 0 },
     due: { type: Number, default: 0 },
     tda: { type: Number, default: 0 },
-    bankColorStatus: { type: String, enum: ['red', 'green']}, // NEW - only for bank
+    bankColorStatus: { type: String, enum: ['red', 'green'], default: 'red' }, // NEW - only for bank
   },
   { _id: false }
 );

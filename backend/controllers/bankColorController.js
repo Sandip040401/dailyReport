@@ -38,26 +38,41 @@ const datesMatch = (date1, date2) => {
 // Update bank color for a specific payment entry
 export const updateBankColor = async (req, res) => {
   try {
+    console.log('\n═══════════════════════════════════════');
+    console.log('🎨 BANK COLOR UPDATE REQUEST');
+    console.log('═══════════════════════════════════════');
+    console.log('📥 Request Body:', JSON.stringify(req.body, null, 2));
+    
     const { partyId, paymentDate, color, isPartyTotal, paymentType } = req.body;
     
     // Validate required fields
     if (!partyId) {
+      console.log('❌ Validation Failed: partyId missing');
       return res.status(400).json({ success: false, message: 'partyId is required' });
     }
 
     if (!['red', 'green'].includes(color)) {
+      console.log('❌ Validation Failed: Invalid color:', color);
       return res.status(400).json({ success: false, message: 'Invalid color. Must be "red" or "green"' });
     }
     
     const partyObjectId = new mongoose.Types.ObjectId(partyId);
+    console.log('✅ Validation Passed');
+    console.log('🔑 Party ObjectId:', partyObjectId.toString());
+    console.log('🎨 Target Color:', color);
+    console.log('📅 Payment Date:', paymentDate);
+    console.log('📊 Payment Type:', paymentType);
+    console.log('🎯 Is Party Total:', isPartyTotal);
 
     let updatedDoc;
-    let savedColor; // Store the saved color to return
+    let savedColor;
 
     // Handle different payment types
     if (paymentType === 'range') {
-      // RANGE PAYMENT (MultiDayPayment)
+      console.log('\n--- RANGE PAYMENT PROCESSING ---');
+      
       if (!isPartyTotal && !paymentDate) {
+        console.log('❌ Missing paymentDate for individual range payment');
         return res.status(400).json({ 
           success: false, 
           message: 'paymentDate is required for individual range payment' 
@@ -65,20 +80,41 @@ export const updateBankColor = async (req, res) => {
       }
 
       if (isPartyTotal) {
-        // Update party total bank color
+        console.log('🔄 Updating PARTY TOTAL color for MultiDayPayment...');
+        
         updatedDoc = await MultiDayPayment.findOneAndUpdate(
           { party: partyObjectId },
           { $set: { partyTotalBankColor: color } },
           { new: true, sort: { createdAt: -1 } }
         );
-        savedColor = updatedDoc?.partyTotalBankColor;
+
+        console.log('📄 Updated Document:', updatedDoc ? 'Found' : 'NOT FOUND');
+        if (updatedDoc) {
+          console.log('💾 Saved partyTotalBankColor:', updatedDoc.partyTotalBankColor);
+        }
+
+        if (!updatedDoc) {
+          console.log('❌ MultiDayPayment document not found for party:', partyObjectId.toString());
+          return res.status(404).json({ 
+            success: false, 
+            message: 'MultiDayPayment document not found' 
+          });
+        }
+
+        savedColor = updatedDoc.partyTotalBankColor;
       } else {
+        console.log('🔄 Updating INDIVIDUAL range payment color...');
+        
         // Parse the date range
         const { startDate, endDate } = parseDateRange(paymentDate);
+        console.log('📅 Parsed Range:', { startDate, endDate });
+        
         const startDateObj = new Date(startDate + 'T00:00:00.000Z');
         const endDateObj = new Date(endDate + 'T00:00:00.000Z');
+        console.log('📅 Date Objects:', { startDateObj, endDateObj });
         
         // Find document with matching range
+        console.log('🔍 Searching for MultiDayPayment document...');
         const multiDayDoc = await MultiDayPayment.findOne({
           party: partyObjectId,
           paymentRanges: {
@@ -89,7 +125,10 @@ export const updateBankColor = async (req, res) => {
           }
         });
 
+        console.log('📄 MultiDayDoc Found:', multiDayDoc ? 'YES' : 'NO');
+
         if (!multiDayDoc) {
+          console.log('❌ MultiDayPayment not found for range:', paymentDate);
           return res.status(404).json({ 
             success: false, 
             message: 'MultiDayPayment not found',
@@ -103,7 +142,10 @@ export const updateBankColor = async (req, res) => {
           datesMatch(range.endDate, endDateObj)
         );
 
+        console.log('📍 Range Index Found:', rangeIndex);
+
         if (rangeIndex === -1) {
+          console.log('❌ Payment range not found in document');
           return res.status(404).json({ 
             success: false, 
             message: 'Payment range not found',
@@ -117,6 +159,7 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
+        console.log('🔄 Updating range color...');
         // Update specific array element
         updatedDoc = await MultiDayPayment.findOneAndUpdate(
           { 
@@ -128,25 +171,22 @@ export const updateBankColor = async (req, res) => {
           { new: true }
         );
 
+        console.log('📄 Update Result:', updatedDoc ? 'SUCCESS' : 'FAILED');
+
         // Extract the saved color from the updated range
         const updatedRange = updatedDoc?.paymentRanges.find(range => 
           datesMatch(range.startDate, startDateObj) && 
           datesMatch(range.endDate, endDateObj)
         );
         savedColor = updatedRange?.bankColorStatus;
-      }
-
-      if (!updatedDoc) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Failed to update MultiDayPayment' 
-        });
+        console.log('💾 Saved Color from DB:', savedColor);
       }
 
     } else if (paymentType === 'daily' || paymentType === 'weekly') {
-      // DAILY/WEEKLY PAYMENT (WeeklyPayment model with Map)
+      console.log('\n--- DAILY/WEEKLY PAYMENT PROCESSING ---');
       
       if (!isPartyTotal && !paymentDate) {
+        console.log('❌ Missing paymentDate for individual payment');
         return res.status(400).json({ 
           success: false, 
           message: 'paymentDate is required for individual payment' 
@@ -154,54 +194,136 @@ export const updateBankColor = async (req, res) => {
       }
 
       if (isPartyTotal) {
-        // Update party total bank color
+        console.log('🔄 Updating PARTY TOTAL color for WeeklyPayment...');
+        
         updatedDoc = await WeeklyPayment.findOneAndUpdate(
           { party: partyObjectId },
           { $set: { partyTotalBankColor: color } },
           { new: true, sort: { createdAt: -1 } }
         );
-        savedColor = updatedDoc?.partyTotalBankColor;
-      } else {
-        // Use dot notation to update only bankColorStatus in the Map
-        updatedDoc = await WeeklyPayment.findOneAndUpdate(
-          { 
-            party: partyObjectId,
-            [`payments.${paymentDate}`]: { $exists: true }
-          },
-          { $set: { [`payments.${paymentDate}.bankColorStatus`]: color } },
-          { new: true }
-        );
 
-        // Extract the saved color from the Map
-        savedColor = updatedDoc?.payments?.get(paymentDate)?.bankColorStatus;
+        console.log('📄 Updated Document:', updatedDoc ? 'Found' : 'NOT FOUND');
+        if (updatedDoc) {
+          console.log('💾 Saved partyTotalBankColor:', updatedDoc.partyTotalBankColor);
+        }
+
+        if (!updatedDoc) {
+          console.log('❌ WeeklyPayment document not found for party:', partyObjectId.toString());
+          return res.status(404).json({ 
+            success: false, 
+            message: 'WeeklyPayment document not found' 
+          });
+        }
+
+        savedColor = updatedDoc.partyTotalBankColor;
+      } else {
+        console.log('🔄 Updating INDIVIDUAL daily/weekly payment color...');
+        console.log('🔍 Searching for payment with date:', paymentDate);
+        
+        // Find the document
+        const existingDoc = await WeeklyPayment.findOne({
+          party: partyObjectId,
+          [`payments.${paymentDate}`]: { $exists: true }
+        });
+        console.log(existingDoc);
+        
+        console.log('📄 Existing Document Found:', existingDoc ? 'YES' : 'NO');
+        if (existingDoc) {
+          console.log('📦 Document ID:', existingDoc._id);
+          console.log('📊 Total Payments in Map:', existingDoc.payments?.size);
+          console.log('🗓️ Available Payment Dates:', Array.from(existingDoc.payments?.keys() || []));
+        }
+
+        if (!existingDoc) {
+          console.log('❌ WeeklyPayment not found for date:', paymentDate);
+          return res.status(404).json({ 
+            success: false, 
+            message: 'WeeklyPayment not found for this date',
+            debug: { partyId, paymentDate }
+          });
+        }
+
+        // Get the existing payment data from Map
+        const existingPayment = existingDoc.payments.get(paymentDate);
+
+        console.log('💳 Existing Payment Data:', existingPayment ? 'FOUND' : 'NOT FOUND');
+        if (existingPayment) {
+          console.log('📋 BEFORE Update:', JSON.stringify(existingPayment, null, 2));
+          console.log('🎨 Current bankColorStatus:', existingPayment.bankColorStatus);
+        }
+
+        if (!existingPayment) {
+          console.log('❌ Payment data not found in Map for date:', paymentDate);
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Payment data not found in Map',
+            debug: { partyId, paymentDate }
+          });
+        }
+
+        console.log('🔄 Modifying Map value directly...');
+        
+        // Directly set the bankColorStatus property
+        existingPayment.bankColorStatus = color;
+        
+        // Put the modified payment back into the Map
+        existingDoc.payments.set(paymentDate, existingPayment);
+        
+        // CRITICAL: Mark the payments Map as modified so Mongoose tracks the change
+        existingDoc.markModified('payments');
+        
+        console.log('💾 Saving document with markModified...');
+        await existingDoc.save();
+        
+        console.log('✅ Document saved successfully');
+        
+        // Reload document from database to verify the save
+        console.log('🔍 Reloading document to verify...');
+        const reloadedDoc = await WeeklyPayment.findById(existingDoc._id);
+        const verifyPayment = reloadedDoc?.payments?.get(paymentDate);
+        
+        console.log('📋 AFTER Update (reloaded):', JSON.stringify(verifyPayment, null, 2));
+        console.log('🎨 Verified bankColorStatus:', verifyPayment?.bankColorStatus);
+        
+        savedColor = verifyPayment?.bankColorStatus;
+        updatedDoc = reloadedDoc;
       }
 
       if (!updatedDoc) {
+        console.log('❌ Failed to update WeeklyPayment');
         return res.status(404).json({ 
           success: false, 
-          message: 'WeeklyPayment not found for this date',
-          debug: { partyId, paymentDate }
+          message: 'Failed to update WeeklyPayment' 
         });
       }
 
     } else {
+      console.log('❌ Invalid paymentType:', paymentType);
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid paymentType. Must be "daily", "weekly", or "range"' 
       });
     }
 
+    console.log('\n✅ UPDATE SUCCESSFUL');
+    console.log('💾 Final Saved Color:', savedColor);
+    console.log('═══════════════════════════════════════\n');
+
     // Return the saved color from the database
     res.json({
       success: true,
       message: 'Bank color updated successfully',
       data: {
-        color: savedColor || color // Fallback to requested color if extraction fails
+        color: savedColor || color
       }
     });
 
   } catch (error) {
-    console.error('Error updating bank color:', error);
+    console.error('\n❌❌❌ ERROR OCCURRED ❌❌❌');
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
+    console.error('═══════════════════════════════════════\n');
+    
     res.status(500).json({ 
       success: false, 
       message: 'Server error', 
