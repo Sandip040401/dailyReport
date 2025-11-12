@@ -22,121 +22,95 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // NEW: Force re-render key
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Extract fetch logic into reusable function
-// In the fetchWeekData function, right after Promise.all
-const fetchWeekData = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const [paymentsRes, expensesRes] = await Promise.all([
-      dashboardAPI.getRangeSummary(weekStart, weekEnd),
-      expenseAPI.getExpenses({ startDate: weekStart, endDate: weekEnd })
-    ]);
+  const fetchWeekData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const [paymentsRes, expensesRes] = await Promise.all([
+        dashboardAPI.getRangeSummary(weekStart, weekEnd),
+        expenseAPI.getExpenses({ startDate: weekStart, endDate: weekEnd })
+      ]);
 
-    // ✅ LOG 1: Raw API Response
-    console.log('═══ RAW API RESPONSE ═══');
-    console.log('Week Range:', { weekStart, weekEnd });
-    console.log('Total parties from API:', paymentsRes?.parties?.length);
-    console.log('Raw parties data:', JSON.stringify(paymentsRes?.parties, null, 2));
-    
-    // Count total payments before filtering
-    const totalPaymentsBefore = paymentsRes?.parties?.reduce(
-      (sum, party) => sum + (party.payments?.length || 0), 
-      0
-    );
-    console.log('Total payments BEFORE filtering:', totalPaymentsBefore);
+      if (paymentsRes?.success) {
+        const filteredData = {
+          ...paymentsRes,
+          parties: paymentsRes.parties
+            ?.map(party => {
+              // Filter payments by date - compare year, month, day only (ignore time)
+              const filteredPayments = party.payments
+                ?.filter(payment => {
+                  if (!payment.date) return false;
+                  
+                  // Extract date string (handle range format)
+                  const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
+                  const dateStr = dates[0];
+                  
+                  // Parse all dates
+                  const paymentDate = new Date(dateStr);
+                  const weekStartDate = new Date(weekStart);
+                  const weekEndDate = new Date(weekEnd);
+                  
+                  // Compare ONLY year, month, day (ignore time completely)
+                  const paymentDay = paymentDate.getFullYear() * 10000 + 
+                                    paymentDate.getMonth() * 100 + 
+                                    paymentDate.getDate();
+                  const startDay = weekStartDate.getFullYear() * 10000 + 
+                                  weekStartDate.getMonth() * 100 + 
+                                  weekStartDate.getDate();
+                  const endDay = weekEndDate.getFullYear() * 10000 + 
+                                weekEndDate.getMonth() * 100 + 
+                                weekEndDate.getDate();
+                  
+                  return paymentDay >= startDay && paymentDay <= endDay;
+                })
+                // Deduplicate by date - keep entry with highest payment amount
+                .reduce((acc, payment) => {
+                  const existingIdx = acc.findIndex(p => p.date === payment.date);
+                  
+                  if (existingIdx === -1) {
+                    acc.push(payment);
+                  } else if (payment.paymentAmount > acc[existingIdx].paymentAmount) {
+                    // Replace with higher amount (actual payment vs zero placeholder)
+                    acc[existingIdx] = payment;
+                  }
+                  
+                  return acc;
+                }, [])
+                // Sort by date
+                .sort((a, b) => {
+                  const dateA = new Date(a.date?.split(/\s*[-–]\s*/)[0]);
+                  const dateB = new Date(b.date?.split(/\s*[-–]\s*/)[0]);
+                  return dateA - dateB;
+                });
 
-    if (paymentsRes?.success) {
-      const filteredData = {
-        ...paymentsRes,
-        parties: paymentsRes.parties?.map(party => {
-          // ✅ LOG 2: Per-party processing
-          console.log(`\n--- Processing Party: ${party.partyName} (${party.partyCode}) ---`);
-          console.log('Original payments count:', party.payments?.length);
-          console.log('Original payments:', party.payments?.map(p => ({
-            date: p.date,
-            amount: p.paymentAmount,
-            type: p.type
-          })));
-
-          const filteredPayments = party.payments?.filter(payment => {
-            if (!payment.date) {
-              console.log('❌ Payment filtered: NO DATE', payment);
-              return false;
-            }
-
-            const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
-            const paymentDate = new Date(dates[0]);
-            const weekStartDate = new Date(weekStart);
-            const weekEndDate = new Date(weekEnd);
-
-            // ✅ LOG 3: Date comparison for each payment
-            const isInRange = paymentDate >= weekStartDate && paymentDate <= weekEndDate;
-            console.log('Payment date check:', {
-              paymentDate: paymentDate.toISOString(),
-              weekStartDate: weekStartDate.toISOString(),
-              weekEndDate: weekEndDate.toISOString(),
-              isInRange,
-              amount: payment.paymentAmount,
-              type: payment.type
-            });
-
-            return isInRange;
-          });
-
-          console.log('Filtered payments count:', filteredPayments?.length);
-          console.log('Filtered payments:', filteredPayments?.map(p => ({
-            date: p.date,
-            amount: p.paymentAmount,
-            type: p.type
-          })));
-
-          return {
-            ...party,
-            payments: filteredPayments?.sort((a, b) => {
-              const dateA = new Date(a.date?.split(/\s*[-–]\s*/)[0] || 0);
-              const dateB = new Date(b.date?.split(/\s*[-–]\s*/)[0] || 0);
-              return dateA - dateB;
+              return {
+                ...party,
+                payments: filteredPayments
+              };
             })
-          };
-        }).filter(party => party.payments && party.payments.length > 0)
-      };
-
-      // ✅ LOG 4: After filtering
-      console.log('\n═══ AFTER FILTERING ═══');
-      console.log('Parties with payments:', filteredData.parties?.length);
-      const totalPaymentsAfter = filteredData.parties?.reduce(
-        (sum, party) => sum + (party.payments?.length || 0), 
-        0
-      );
-      console.log('Total payments AFTER filtering:', totalPaymentsAfter);
-      console.log('Filtered data structure:', JSON.stringify(filteredData.parties, null, 2));
-
-      setWeeklyData(filteredData);
-    } else {
+            .filter(party => party.payments && party.payments.length > 0)
+        };
+        
+        setWeeklyData(filteredData);
+      } else {
+        setWeeklyData({ parties: [] });
+      }
+      
+      setExpenses(expensesRes?.data || []);
+      setRefreshKey(prev => prev + 1);
+    } catch (e) {
+      console.error('Data fetch error', e);
+      setError('Failed to load data');
       setWeeklyData({ parties: [] });
+      setExpenses([]);
+    } finally {
+      setLoading(false);
     }
-    
-    // ✅ LOG 5: Expenses
-    console.log('\n═══ EXPENSES DATA ═══');
-    console.log('Expenses count:', expensesRes?.data?.length);
-    console.log('Expenses:', expensesRes?.data);
-    
-    setExpenses(expensesRes?.data);
-    setRefreshKey(prev => prev + 1);
-  } catch (e) {
-    console.error('❌ Data fetch error:', e);
-    setError('Failed to load data');
-    setWeeklyData({ parties: [] });
-    setExpenses([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   // Initial load and week change
   useEffect(() => {
@@ -203,10 +177,10 @@ const fetchWeekData = async () => {
           </div>
         ) : (
           <WeeklySummary 
-            key={refreshKey}  // Force unmount/remount on data update
+            key={refreshKey}
             data={weeklyData} 
             expenses={expenses}
-            onDataUpdate={fetchWeekData}  // Pass callback to child
+            onDataUpdate={fetchWeekData}
           /> 
         )}
       </div>
