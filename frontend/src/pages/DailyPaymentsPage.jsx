@@ -11,7 +11,7 @@ import {
   Calendar,
   Loader2,
 } from "lucide-react";
-import { paymentAPI, partyAPI } from "../lib/api";
+import { paymentAPI, partyAPI, authAPI } from "../lib/api";
 import { getWeekStart, getWeekEnd, formatWeekRange } from "../utils/dateUtils";
 
 export default function DailyPaymentsPage() {
@@ -44,6 +44,11 @@ export default function DailyPaymentsPage() {
     tda: "",
   });
 
+  // NEW: Role-based authentication state
+  const [userRole, setUserRole] = useState("employee");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading...");
+
   const cellOrder = ["paymentAmount", "pwt", "cash", "bank", "due", "tda"];
 
   const dateOnly = (d) => (d ? String(d).split("T")[0] : undefined);
@@ -61,6 +66,35 @@ export default function DailyPaymentsPage() {
 
   const dateArray = generateDateArray();
   const totalDataRows = selectedParties.length * (dateArray.length + 1);
+
+  // NEW: Fetch user role on component mount
+  useEffect(() => {
+    const fetchRole = async () => {
+      setIsLoading(true);
+      setLoadingMessage("Authenticating user...");
+
+      const token = localStorage.getItem("payment-token");
+      console.log(token);
+
+      if (!token) {
+        setUserRole("employee");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const role = await authAPI.role(token);
+        setUserRole(role.role);
+      } catch (error) {
+        console.error("Error fetching role:", error);
+        setUserRole("employee");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRole();
+  }, []);
 
   useEffect(() => {
     fetchParties();
@@ -545,6 +579,27 @@ export default function DailyPaymentsPage() {
     );
   };
 
+  // NEW: Check if admin
+  const isAdmin = userRole === "admin";
+
+  // Show initial authentication loading
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+          <p className="text-lg font-semibold text-gray-900">{loadingMessage}</p>
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-emerald-500 h-full rounded-full animate-pulse"
+              style={{ width: "100%" }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Toast Notifications - Right Side */}
@@ -770,7 +825,7 @@ export default function DailyPaymentsPage() {
 
                       return (
                         <React.Fragment key={partyId}>
-                          {/* Header row */}
+                          {/* UPDATED: Conditionally show ACT column header for admins only */}
                           <tr className="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-400">
                             <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-left text-xs font-bold text-gray-800 w-20">
                               DATE
@@ -799,9 +854,11 @@ export default function DailyPaymentsPage() {
                             <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-right text-xs font-bold text-gray-800 w-24">
                               TOTAL
                             </th>
-                            <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-center text-xs font-bold text-gray-800 w-16">
-                              ACT
-                            </th>
+                            {isAdmin && (
+                              <th className="border border-gray-400 bg-gray-50 px-4 py-3 text-center text-xs font-bold text-gray-800 w-16">
+                                ACT
+                              </th>
+                            )}
                           </tr>
 
                           {/* Data rows */}
@@ -882,20 +939,23 @@ export default function DailyPaymentsPage() {
                                   </span>
                                 </td>
 
-                                <td className="border border-gray-500 px-4 py-2 text-center">
-                                  {payment ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(partyId, date);
-                                      }}
-                                      className="inline-flex items-center justify-center w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                                      title="Delete"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  ) : null}
-                                </td>
+                                {/* UPDATED: Show ACT column only for admins */}
+                                {isAdmin && (
+                                  <td className="border border-gray-500 px-4 py-2 text-center">
+                                    {payment ? (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDelete(partyId, date);
+                                        }}
+                                        className="inline-flex items-center justify-center w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    ) : null}
+                                  </td>
+                                )}
                               </tr>
                             );
                           })}
@@ -1006,7 +1066,9 @@ export default function DailyPaymentsPage() {
                                 -
                               </span>
                             </td>
-                            <td className="border border-gray-500 px-4 py-2"></td>
+                            {isAdmin && (
+                              <td className="border border-gray-500 px-4 py-2"></td>
+                            )}
                           </tr>
 
                           {/* Party Total Row */}
@@ -1048,13 +1110,15 @@ export default function DailyPaymentsPage() {
                                 totals.tda
                               ).toLocaleString()}
                             </td>
-                            <td className="border border-gray-500 px-4 py-3"></td>
+                            {isAdmin && (
+                              <td className="border border-gray-500 px-4 py-3"></td>
+                            )}
                           </tr>
 
                           {/* Spacer between parties */}
                           {partyIndex < selectedParties.length - 1 && (
                             <tr className="h-1 bg-gray-100">
-                              <td colSpan="10"></td>
+                              <td colSpan={isAdmin ? 10 : 9}></td>
                             </tr>
                           )}
                         </React.Fragment>
@@ -1106,7 +1170,9 @@ export default function DailyPaymentsPage() {
                           grandTotals.tda
                         ).toLocaleString()}
                       </td>
-                      <td className="border border-gray-500 px-4 py-3"></td>
+                      {isAdmin && (
+                        <td className="border border-gray-500 px-4 py-3"></td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
