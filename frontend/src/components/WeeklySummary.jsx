@@ -154,7 +154,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
       if (party.weeklyNP) {
         const npAmount = party.weeklyNP.amount || 0;
         partyTotal.paymentAmount += npAmount;
-        partyTotal.bank += npAmount;
+        // partyTotal.bank += npAmount;
         partyTotal.npAmount = npAmount;
       }
 
