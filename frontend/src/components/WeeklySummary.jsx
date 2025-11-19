@@ -591,7 +591,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     {num(
                       party.partyTotal.pwt +
                         party.partyTotal.cash +
-                        (party.partyTotal.bank - party.partyTotal.npAmount) +
+                        (party.partyTotal.bank) +
                         party.partyTotal.due +
                         party.partyTotal.tda
                     )}
@@ -673,7 +673,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   {num(
                     grandTotal.pwt +
                       grandTotal.cash +
-                      (grandTotal.bank - grandTotal.npAmount) +
+                      (grandTotal.bank) +
                       grandTotal.due +
                       grandTotal.tda
                   )}
