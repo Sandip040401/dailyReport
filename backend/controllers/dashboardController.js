@@ -8,6 +8,11 @@ import Party from '../models/Party.js';
 const toISO = (d) => new Date(d).toISOString().slice(0, 10);
 const isValidDate = (d) => !Number.isNaN(new Date(d).getTime());
 
+// ✅ NEW: Helper to check if dates match exactly
+const datesMatch = (date1, date2) => {
+  return toISO(date1) === toISO(date2);
+};
+
 export const getRangeSummary = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -46,8 +51,7 @@ export const getRangeSummary = async (req, res) => {
       partiesArr.map((p) => [String(p._id), { name: p.partyName, code: p.partyCode }])
     );
 
-    // ✨ NEW: Structure data party-wise
-    const partyMap = new Map(); // partyId -> { partyId, partyName, partyCode, payments: [], weeklyNP: {...}, partyTotalBankColor: ... }
+    const partyMap = new Map();
 
     // Helper to ensure party exists in map
     const ensureParty = (partyId) => {
@@ -60,7 +64,7 @@ export const getRangeSummary = async (req, res) => {
           partyCode: meta.code,
           payments: [],
           weeklyNP: null,
-          partyTotalBankColor: null, // ✨ Add party-level color
+          partyTotalBankColor: null,
         });
       }
       return partyMap.get(pid);
@@ -70,8 +74,13 @@ export const getRangeSummary = async (req, res) => {
     for (const doc of weeklyDocs) {
       const party = ensureParty(doc.party);
 
-      // ✨ Get party total bank color from WeeklyPayment
-      if (doc.partyTotalBankColor) {
+      // ✅ Check if this document's week EXACTLY matches the requested range
+      const docStartMatches = datesMatch(doc.weekStartDate, start);
+      const docEndMatches = datesMatch(doc.weekEndDate, end);
+      const isExactWeekMatch = docStartMatches && docEndMatches;
+
+      // Get party total bank color from WeeklyPayment
+      if (doc.partyTotalBankColor && isExactWeekMatch) {
         party.partyTotalBankColor = doc.partyTotalBankColor;
       }
 
@@ -95,13 +104,13 @@ export const getRangeSummary = async (req, res) => {
             bank: entry?.bank ?? 0,
             due: entry?.due ?? 0,
             tda: entry?.tda ?? 0,
-            bankColorStatus: entry?.bankColorStatus || null, // ✨ Add color status
+            bankColorStatus: entry?.bankColorStatus || null,
           });
         }
       }
 
-      // Extract weeklyNP
-      if (doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
+      // ✅ FIXED: Only extract weeklyNP if this is the EXACT week match
+      if (isExactWeekMatch && doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
         party.weeklyNP = {
           name: doc.weeklyNP.name || '',
           amount: doc.weeklyNP.amount || 0,
@@ -113,8 +122,13 @@ export const getRangeSummary = async (req, res) => {
     for (const doc of multiDayDocs) {
       const party = ensureParty(doc.party);
 
-      // ✨ Get party total bank color from MultiDayPayment (if not already set)
-      if (doc.partyTotalBankColor && !party.partyTotalBankColor) {
+      // ✅ Check if this document's week EXACTLY matches the requested range
+      const docStartMatches = datesMatch(doc.weekStartDate, start);
+      const docEndMatches = datesMatch(doc.weekEndDate, end);
+      const isExactWeekMatch = docStartMatches && docEndMatches;
+
+      // Get party total bank color from MultiDayPayment (if not already set)
+      if (doc.partyTotalBankColor && !party.partyTotalBankColor && isExactWeekMatch) {
         party.partyTotalBankColor = doc.partyTotalBankColor;
       }
 
@@ -129,7 +143,7 @@ export const getRangeSummary = async (req, res) => {
             type: 'range',
             source: 'MultiDayPayment',
             date: `${toISO(rs)} – ${toISO(re)}`,
-            sortDate: toISO(rs), // Sort by start date
+            sortDate: toISO(rs),
             startDate: toISO(rs),
             endDate: toISO(re),
             paymentAmount: range.paymentAmount || 0,
@@ -138,13 +152,13 @@ export const getRangeSummary = async (req, res) => {
             bank: range.bank || 0,
             due: range.due || 0,
             tda: range.tda || 0,
-            bankColorStatus: range.bankColorStatus || null, // ✨ Add color status
+            bankColorStatus: range.bankColorStatus || null,
           });
         }
       }
 
-      // Extract weeklyNP from MultiDayPayment
-      if (doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
+      // ✅ FIXED: Only extract weeklyNP if this is the EXACT week match
+      if (isExactWeekMatch && doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
         // If weeklyNP already exists from WeeklyPayment, add amounts together
         if (party.weeklyNP) {
           party.weeklyNP.amount += doc.weeklyNP.amount || 0;
@@ -185,7 +199,7 @@ export const getRangeSummary = async (req, res) => {
         partyId: party.partyId,
         partyName: party.partyName,
         partyCode: party.partyCode,
-        partyTotalBankColor: party.partyTotalBankColor, // ✨ Include party total color
+        partyTotalBankColor: party.partyTotalBankColor,
         payments: party.payments,
         weeklyNP: party.weeklyNP,
       });
