@@ -4,6 +4,23 @@ import MultiDayPayment from '../models/MultiDayPayment.js';
 import mongoose from 'mongoose';
 
 /**
+ * ✨ NEW: Helper to check if payment entry has at least one non-zero value
+ */
+const hasValidPaymentData = (entry) => {
+  if (!entry) return false;
+  
+  const paymentAmount = entry.paymentAmount ?? 0;
+  const pwt = entry.pwt ?? 0;
+  const cash = entry.cash ?? 0;
+  const bank = entry.bank ?? 0;
+  const due = entry.due ?? 0;
+  const tda = entry.tda ?? 0;
+  
+  // Return true if at least one field is non-zero
+  return paymentAmount !== 0 || pwt !== 0 || cash !== 0 || bank !== 0 || due !== 0 || tda !== 0;
+};
+
+/**
  * Parse date range string like "2025-11-03 – 2025-11-05"
  * Returns { startDate, endDate } as string format YYYY-MM-DD
  */
@@ -136,36 +153,57 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
-        // Find the matching payment range index
-        const rangeIndex = multiDayDoc.paymentRanges.findIndex(range => 
-          datesMatch(range.startDate, startDateObj) && 
-          datesMatch(range.endDate, endDateObj)
-        );
+        // ✨ CRITICAL FIX: Find the matching payment range with valid data
+        const rangeIndex = multiDayDoc.paymentRanges.findIndex(range => {
+          const datesMatchCheck = datesMatch(range.startDate, startDateObj) && 
+                                  datesMatch(range.endDate, endDateObj);
+          const hasValidData = hasValidPaymentData(range);
+          
+          console.log('🔍 Checking range:', {
+            dates: `${range.startDate} to ${range.endDate}`,
+            datesMatch: datesMatchCheck,
+            hasValidData,
+            data: {
+              paymentAmount: range.paymentAmount,
+              pwt: range.pwt,
+              cash: range.cash,
+              bank: range.bank,
+              due: range.due,
+              tda: range.tda
+            }
+          });
+          
+          return datesMatchCheck && hasValidData;
+        });
 
-        console.log('📍 Range Index Found:', rangeIndex);
+        console.log('📍 Valid Range Index Found:', rangeIndex);
 
         if (rangeIndex === -1) {
-          console.log('❌ Payment range not found in document');
+          console.log('❌ Payment range with valid data not found in document');
           return res.status(404).json({ 
             success: false, 
-            message: 'Payment range not found',
+            message: 'Payment range with valid data not found',
             debug: { 
               searchedRange: paymentDate,
               availableRanges: multiDayDoc.paymentRanges.map(r => ({
                 start: r.startDate,
-                end: r.endDate
+                end: r.endDate,
+                hasData: hasValidPaymentData(r)
               }))
             }
           });
         }
 
+        // Get the actual range to update
+        const targetRange = multiDayDoc.paymentRanges[rangeIndex];
+        
         console.log('🔄 Updating range color...');
-        // Update specific array element
+        // Update specific array element using the matched range's exact dates
         updatedDoc = await MultiDayPayment.findOneAndUpdate(
           { 
             _id: multiDayDoc._id,
-            'paymentRanges.startDate': startDateObj,
-            'paymentRanges.endDate': endDateObj
+            'paymentRanges.startDate': targetRange.startDate,
+            'paymentRanges.endDate': targetRange.endDate
           },
           { $set: { 'paymentRanges.$.bankColorStatus': color } },
           { new: true }
@@ -175,8 +213,8 @@ export const updateBankColor = async (req, res) => {
 
         // Extract the saved color from the updated range
         const updatedRange = updatedDoc?.paymentRanges.find(range => 
-          datesMatch(range.startDate, startDateObj) && 
-          datesMatch(range.endDate, endDateObj)
+          datesMatch(range.startDate, targetRange.startDate) && 
+          datesMatch(range.endDate, targetRange.endDate)
         );
         savedColor = updatedRange?.bankColorStatus;
         console.log('💾 Saved Color from DB:', savedColor);
@@ -220,12 +258,11 @@ export const updateBankColor = async (req, res) => {
         console.log('🔄 Updating INDIVIDUAL daily/weekly payment color...');
         console.log('🔍 Searching for payment with date:', paymentDate);
         
-        // Find the document
+        // ✨ CRITICAL FIX: Find the document and iterate to find valid payment
         const existingDoc = await WeeklyPayment.findOne({
           party: partyObjectId,
           [`payments.${paymentDate}`]: { $exists: true }
         });
-        console.log(existingDoc);
         
         console.log('📄 Existing Document Found:', existingDoc ? 'YES' : 'NO');
         if (existingDoc) {
@@ -243,13 +280,14 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
-        // Get the existing payment data from Map
+        // ✨ CRITICAL FIX: Get the existing payment and validate it has data
         const existingPayment = existingDoc.payments.get(paymentDate);
 
         console.log('💳 Existing Payment Data:', existingPayment ? 'FOUND' : 'NOT FOUND');
         if (existingPayment) {
           console.log('📋 BEFORE Update:', JSON.stringify(existingPayment, null, 2));
           console.log('🎨 Current bankColorStatus:', existingPayment.bankColorStatus);
+          console.log('✅ Has Valid Data:', hasValidPaymentData(existingPayment));
         }
 
         if (!existingPayment) {
@@ -261,32 +299,84 @@ export const updateBankColor = async (req, res) => {
           });
         }
 
-        console.log('🔄 Modifying Map value directly...');
-        
-        // Directly set the bankColorStatus property
-        existingPayment.bankColorStatus = color;
-        
-        // Put the modified payment back into the Map
-        existingDoc.payments.set(paymentDate, existingPayment);
-        
-        // CRITICAL: Mark the payments Map as modified so Mongoose tracks the change
-        existingDoc.markModified('payments');
-        
-        console.log('💾 Saving document with markModified...');
-        await existingDoc.save();
-        
-        console.log('✅ Document saved successfully');
-        
-        // Reload document from database to verify the save
-        console.log('🔍 Reloading document to verify...');
-        const reloadedDoc = await WeeklyPayment.findById(existingDoc._id);
-        const verifyPayment = reloadedDoc?.payments?.get(paymentDate);
-        
-        console.log('📋 AFTER Update (reloaded):', JSON.stringify(verifyPayment, null, 2));
-        console.log('🎨 Verified bankColorStatus:', verifyPayment?.bankColorStatus);
-        
-        savedColor = verifyPayment?.bankColorStatus;
-        updatedDoc = reloadedDoc;
+        // ✨ CRITICAL FIX: Validate payment has actual data before updating
+        if (!hasValidPaymentData(existingPayment)) {
+          console.log('❌ Payment entry has all zero values, skipping update');
+          
+          // Try to find another document/entry for this date with valid data
+          console.log('🔍 Searching for alternative entry with valid data...');
+          
+          // Get all documents for this party
+          const allDocs = await WeeklyPayment.find({
+            party: partyObjectId,
+            [`payments.${paymentDate}`]: { $exists: true }
+          });
+          
+          console.log('📚 Found', allDocs.length, 'document(s) with this date');
+          
+          // Find a document with valid payment data for this date
+          let validDoc = null;
+          let validPayment = null;
+          
+          for (const doc of allDocs) {
+            const payment = doc.payments.get(paymentDate);
+            if (hasValidPaymentData(payment)) {
+              validDoc = doc;
+              validPayment = payment;
+              console.log('✅ Found valid payment in document:', doc._id);
+              break;
+            }
+          }
+          
+          if (!validDoc || !validPayment) {
+            console.log('❌ No valid payment data found for this date');
+            return res.status(404).json({ 
+              success: false, 
+              message: 'No payment entry with valid data found for this date',
+              debug: { partyId, paymentDate }
+            });
+          }
+          
+          // Update the valid entry
+          console.log('🔄 Updating valid payment entry...');
+          validPayment.bankColorStatus = color;
+          validDoc.payments.set(paymentDate, validPayment);
+          validDoc.markModified('payments');
+          await validDoc.save();
+          
+          // Reload and verify
+          const reloadedDoc = await WeeklyPayment.findById(validDoc._id);
+          const verifyPayment = reloadedDoc?.payments?.get(paymentDate);
+          
+          console.log('📋 AFTER Update (reloaded):', JSON.stringify(verifyPayment, null, 2));
+          console.log('🎨 Verified bankColorStatus:', verifyPayment?.bankColorStatus);
+          
+          savedColor = verifyPayment?.bankColorStatus;
+          updatedDoc = reloadedDoc;
+        } else {
+          // Payment has valid data, proceed with normal update
+          console.log('🔄 Modifying Map value directly...');
+          
+          existingPayment.bankColorStatus = color;
+          existingDoc.payments.set(paymentDate, existingPayment);
+          existingDoc.markModified('payments');
+          
+          console.log('💾 Saving document with markModified...');
+          await existingDoc.save();
+          
+          console.log('✅ Document saved successfully');
+          
+          // Reload document from database to verify the save
+          console.log('🔍 Reloading document to verify...');
+          const reloadedDoc = await WeeklyPayment.findById(existingDoc._id);
+          const verifyPayment = reloadedDoc?.payments?.get(paymentDate);
+          
+          console.log('📋 AFTER Update (reloaded):', JSON.stringify(verifyPayment, null, 2));
+          console.log('🎨 Verified bankColorStatus:', verifyPayment?.bankColorStatus);
+          
+          savedColor = verifyPayment?.bankColorStatus;
+          updatedDoc = reloadedDoc;
+        }
       }
 
       if (!updatedDoc) {
