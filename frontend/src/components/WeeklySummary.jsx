@@ -479,7 +479,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                 );
               })}
 
-              {party.weeklyNP && (
+              {party.weeklyNP && party.weeklyNP.amount > 0 && (
                 <tr className={rowCls("weeklyNP")}>
                   <td
                     className={`${dateCell} ${cellLeft} ${stickyDate} w-16 sm:w-20`}
@@ -591,7 +591,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                     {num(
                       party.partyTotal.pwt +
                         party.partyTotal.cash +
-                        (party.partyTotal.bank) +
+                        party.partyTotal.bank +
                         party.partyTotal.due +
                         party.partyTotal.tda
                     )}
@@ -673,7 +673,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
                   {num(
                     grandTotal.pwt +
                       grandTotal.cash +
-                      (grandTotal.bank) +
+                      grandTotal.bank +
                       grandTotal.due +
                       grandTotal.tda
                   )}

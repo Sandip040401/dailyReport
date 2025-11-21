@@ -4,13 +4,15 @@ import WeeklyPayment from '../models/WeeklyPayment.js';
 import MultiDayPayment from '../models/MultiDayPayment.js';
 import Party from '../models/Party.js';
 
+
 // Helper functions
 const toISO = (d) => new Date(d).toISOString().slice(0, 10);
 const isValidDate = (d) => !Number.isNaN(new Date(d).getTime());
 
-// ✅ NEW: Helper to check if dates match exactly
-const datesMatch = (date1, date2) => {
-  return toISO(date1) === toISO(date2);
+
+// Helper to check if date ranges overlap
+const rangesOverlap = (start1, end1, start2, end2) => {
+  return start1 <= end2 && end1 >= start2;
 };
 
 export const getRangeSummary = async (req, res) => {
@@ -25,7 +27,7 @@ export const getRangeSummary = async (req, res) => {
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
 
-    // Fetch overlapping docs from both models
+    // Fetch docs overlapping with the range
     const [weeklyDocs, multiDayDocs] = await Promise.all([
       WeeklyPayment.find({
         weekStartDate: { $lte: end },
@@ -70,21 +72,19 @@ export const getRangeSummary = async (req, res) => {
       return partyMap.get(pid);
     };
 
-    // ============ Process WeeklyPayment docs ============
+    // Process WeeklyPayment docs
     for (const doc of weeklyDocs) {
       const party = ensureParty(doc.party);
 
-      // ✅ Check if this document's week EXACTLY matches the requested range
-      const docStartMatches = datesMatch(doc.weekStartDate, start);
-      const docEndMatches = datesMatch(doc.weekEndDate, end);
-      const isExactWeekMatch = docStartMatches && docEndMatches;
+      // Check if this document's week overlaps the requested range
+      const isOverlap = rangesOverlap(doc.weekStartDate, doc.weekEndDate, start, end);
 
-      // Get party total bank color from WeeklyPayment
-      if (doc.partyTotalBankColor && isExactWeekMatch) {
+      // Get party total bank color if overlaps
+      if (doc.partyTotalBankColor && isOverlap) {
         party.partyTotalBankColor = doc.partyTotalBankColor;
       }
 
-      // Extract daily payment entries
+      // Extract daily payment entries filtered by the requested range
       if (doc.payments && (doc.payments instanceof Map ? doc.payments.size > 0 : Object.keys(doc.payments || {}).length > 0)) {
         const entries = doc.payments instanceof Map ? doc.payments.entries() : Object.entries(doc.payments);
 
@@ -109,8 +109,8 @@ export const getRangeSummary = async (req, res) => {
         }
       }
 
-      // ✅ FIXED: Only extract weeklyNP if this is the EXACT week match
-      if (isExactWeekMatch && doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
+      // Extract weeklyNP if overlapping and weeklyNP object present (no amount check)
+      if (isOverlap && doc.weeklyNP && typeof doc.weeklyNP === 'object') {
         party.weeklyNP = {
           name: doc.weeklyNP.name || '',
           amount: doc.weeklyNP.amount || 0,
@@ -118,21 +118,19 @@ export const getRangeSummary = async (req, res) => {
       }
     }
 
-    // ============ Process MultiDayPayment docs ============
+    // Process MultiDayPayment docs
     for (const doc of multiDayDocs) {
       const party = ensureParty(doc.party);
 
-      // ✅ Check if this document's week EXACTLY matches the requested range
-      const docStartMatches = datesMatch(doc.weekStartDate, start);
-      const docEndMatches = datesMatch(doc.weekEndDate, end);
-      const isExactWeekMatch = docStartMatches && docEndMatches;
+      // Check if this document's week overlaps the requested range
+      const isOverlap = rangesOverlap(doc.weekStartDate, doc.weekEndDate, start, end);
 
-      // Get party total bank color from MultiDayPayment (if not already set)
-      if (doc.partyTotalBankColor && !party.partyTotalBankColor && isExactWeekMatch) {
+      // Get party total bank color if null and overlaps
+      if (doc.partyTotalBankColor && !party.partyTotalBankColor && isOverlap) {
         party.partyTotalBankColor = doc.partyTotalBankColor;
       }
 
-      // Extract payment ranges from paymentRanges array
+      // Extract payment ranges filtered by requested range
       if (Array.isArray(doc.paymentRanges) && doc.paymentRanges.length > 0) {
         for (const range of doc.paymentRanges) {
           const rs = new Date(range.startDate);
@@ -157,9 +155,8 @@ export const getRangeSummary = async (req, res) => {
         }
       }
 
-      // ✅ FIXED: Only extract weeklyNP if this is the EXACT week match
-      if (isExactWeekMatch && doc.weeklyNP && typeof doc.weeklyNP === 'object' && (doc.weeklyNP.amount || 0) > 0) {
-        // If weeklyNP already exists from WeeklyPayment, add amounts together
+      // Extract weeklyNP if overlapping and weeklyNP object present (aggregate if already exists)
+      if (isOverlap && doc.weeklyNP && typeof doc.weeklyNP === 'object') {
         if (party.weeklyNP) {
           party.weeklyNP.amount += doc.weeklyNP.amount || 0;
           if (doc.weeklyNP.name) {
@@ -176,11 +173,11 @@ export const getRangeSummary = async (req, res) => {
       }
     }
 
-    // ============ Build final structured result ============
+    // Build final structured result
     const result = [];
 
     // Convert map to array and sort parties alphabetically
-    const sortedParties = Array.from(partyMap.values()).sort((a, b) => 
+    const sortedParties = Array.from(partyMap.values()).sort((a, b) =>
       a.partyName.localeCompare(b.partyName)
     );
 
@@ -213,10 +210,10 @@ export const getRangeSummary = async (req, res) => {
     });
   } catch (e) {
     console.error('getRangeSummary error', e);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: 'Internal server error',
-      error: e.message 
+      error: e.message,
     });
   }
 };
