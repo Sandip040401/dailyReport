@@ -4,11 +4,9 @@ import WeeklyPayment from '../models/WeeklyPayment.js';
 import MultiDayPayment from '../models/MultiDayPayment.js';
 import Party from '../models/Party.js';
 
-
 // Helper functions
 const toISO = (d) => new Date(d).toISOString().slice(0, 10);
 const isValidDate = (d) => !Number.isNaN(new Date(d).getTime());
-
 
 // Helper to check if date ranges overlap
 const rangesOverlap = (start1, end1, start2, end2) => {
@@ -155,21 +153,12 @@ export const getRangeSummary = async (req, res) => {
         }
       }
 
-      // Extract weeklyNP if overlapping and weeklyNP object present (aggregate if already exists)
+      // Extract weeklyNP if overlapping and weeklyNP object present (send as-is, no aggregation)
       if (isOverlap && doc.weeklyNP && typeof doc.weeklyNP === 'object') {
-        if (party.weeklyNP) {
-          party.weeklyNP.amount += doc.weeklyNP.amount || 0;
-          if (doc.weeklyNP.name) {
-            party.weeklyNP.name = party.weeklyNP.name
-              ? `${party.weeklyNP.name}, ${doc.weeklyNP.name}`
-              : doc.weeklyNP.name;
-          }
-        } else {
-          party.weeklyNP = {
-            name: doc.weeklyNP.name || '',
-            amount: doc.weeklyNP.amount || 0,
-          };
-        }
+        party.weeklyNP = {
+          name: doc.weeklyNP.name || '',
+          amount: doc.weeklyNP.amount || 0,
+        };
       }
     }
 

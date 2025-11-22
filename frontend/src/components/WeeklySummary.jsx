@@ -11,6 +11,7 @@ export default function WeeklySummary({ data, expenses = [] }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Loading user data...");
   const [updatingKey, setUpdatingKey] = useState(null);
+console.log(data);
 
   // Decode token and set role
   useEffect(() => {
