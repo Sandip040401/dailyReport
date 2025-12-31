@@ -1,24 +1,34 @@
 // src/pages/Report.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, IndianRupee, Banknote, Wallet, PiggyBank, TrendingUp, Calculator, Receipt, Coins, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { dashboardAPI, expenseAPI } from '../lib/api';
-
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Loader2,
+  IndianRupee,
+  Banknote,
+  Wallet,
+  PiggyBank,
+  TrendingUp,
+  Calculator,
+  Receipt,
+  Coins,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  AlertCircle,
+} from "lucide-react";
+import { dashboardAPI, expenseAPI } from "../lib/api";
 
 // ============================================================================
 // DATE-ONLY UTILITIES (No timezone conversions) - COPIED FROM ExpensesPage.jsx
 // ============================================================================
-const pad2 = (n) => String(n).padStart(2, '0');
-
+const pad2 = (n) => String(n).padStart(2, "0");
 
 const fromYMD = (ymd) => {
-  const [y, m, d] = ymd.split('-').map(Number);
+  const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
 };
 
-
 const toYMD = (d) =>
   `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-
 
 const dayOfWeek1to7 = (ymd) => {
   const d = fromYMD(ymd);
@@ -26,16 +36,14 @@ const dayOfWeek1to7 = (ymd) => {
   return dow0 === 0 ? 7 : dow0;
 };
 
-
 // Get Monday of the week for any given date
 const getWeekStart = (date) => {
-  const ymd = typeof date === 'string' ? date : toYMD(date);
+  const ymd = typeof date === "string" ? date : toYMD(date);
   const d = fromYMD(ymd);
   const dow = dayOfWeek1to7(ymd);
   d.setDate(d.getDate() - (dow - 1));
   return toYMD(d);
 };
-
 
 // Get Sunday (6 days after Monday)
 const getWeekEnd = (mondayYmd) => {
@@ -44,34 +52,36 @@ const getWeekEnd = (mondayYmd) => {
   return toYMD(d);
 };
 
-
 // Format week range for display
 const formatWeekRange = (startYmd, endYmd) => {
   const start = fromYMD(startYmd);
   const end = fromYMD(endYmd);
-  const opts = { day: '2-digit', month: 'short', year: 'numeric' };
-  return `${start.toLocaleDateString('en-IN', opts)} - ${end.toLocaleDateString('en-IN', opts)}`;
+  const opts = { day: "2-digit", month: "short", year: "numeric" };
+  return `${start.toLocaleDateString("en-IN", opts)} - ${end.toLocaleDateString(
+    "en-IN",
+    opts
+  )}`;
 };
-
 
 // Format single date for display
 const formatDate = (dateStr) => {
   const d = fromYMD(dateStr);
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 };
-
 
 export const Report = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Selected week state (defaults to current week - Monday to Sunday)
-  const [selectedWeekStart, setSelectedWeekStart] = useState(() => getWeekStart(new Date()));
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() =>
+    getWeekStart(new Date())
+  );
   const selectedWeekEnd = getWeekEnd(selectedWeekStart);
 
   const [weeklyData, setWeeklyData] = useState(null);
@@ -85,12 +95,12 @@ export const Report = () => {
       setLoading(true);
       const params = {
         startDate: selectedWeekStart,
-        endDate: selectedWeekEnd
+        endDate: selectedWeekEnd,
       };
 
       const [paymentsRes, expensesRes] = await Promise.all([
         dashboardAPI.getRangeSummary(selectedWeekStart, selectedWeekEnd),
-        expenseAPI.getExpenses(params)
+        expenseAPI.getExpenses(params),
       ]);
 
       // Filter payments by date like Index.jsx
@@ -100,32 +110,39 @@ export const Report = () => {
 
         const filteredData = {
           ...paymentsRes,
-          parties: paymentsRes.parties?.map((party) => {
-            const filteredPayments = party.payments
-              ?.filter((payment) => {
-                if (!payment.date) return false;
+          parties: paymentsRes.parties
+            ?.map((party) => {
+              const filteredPayments = party.payments
+                ?.filter((payment) => {
+                  if (!payment.date) return false;
 
-                const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
-                const paymentDate = fromYMD(dates[0]);
+                  const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
+                  const paymentDate = fromYMD(dates[0]);
 
-                return paymentDate >= weekStartDate && paymentDate <= weekEndDate;
-              })
-              .sort((a, b) => {
-                const dateA = fromYMD(a.date?.split(/\s*[-–]\s*/)[0] || selectedWeekStart);
-                const dateB = fromYMD(b.date?.split(/\s*[-–]\s*/)[0] || selectedWeekStart);
-                return dateA - dateB;
-              });
+                  return (
+                    paymentDate >= weekStartDate && paymentDate <= weekEndDate
+                  );
+                })
+                .sort((a, b) => {
+                  const dateA = fromYMD(
+                    a.date?.split(/\s*[-–]\s*/)[0] || selectedWeekStart
+                  );
+                  const dateB = fromYMD(
+                    b.date?.split(/\s*[-–]\s*/)[0] || selectedWeekStart
+                  );
+                  return dateA - dateB;
+                });
 
-            return {
-              ...party,
-              payments: filteredPayments
-            };
-          })
-          .filter((party) => {
-            const hasPayments = party.payments && party.payments.length > 0;
-            const hasNP = !!party.weeklyNP;
-            return hasPayments || hasNP;
-          })
+              return {
+                ...party,
+                payments: filteredPayments,
+              };
+            })
+            .filter((party) => {
+              const hasPayments = party.payments && party.payments.length > 0;
+              const hasNP = !!party.weeklyNP;
+              return hasPayments || hasNP;
+            }),
         };
 
         setWeeklyData(filteredData);
@@ -134,10 +151,10 @@ export const Report = () => {
       }
 
       setExpenses(expensesRes?.data || []);
-      setError('');
+      setError("");
     } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Failed to load report');
+      console.error("Error fetching data:", error);
+      setError("Failed to load report");
       setWeeklyData({ parties: [] });
       setExpenses([]);
     } finally {
@@ -226,16 +243,18 @@ export const Report = () => {
   }, [grand, totalExpenses]);
 
   const totalAllColumns = useMemo(() => {
-    return (grand.pwt || 0)
-      + (grand.cash || 0)
-      + (grand.bank || 0)
-      + (grand.due || 0)
-      + (grand.tda || 0);
+    return (
+      (grand.pwt || 0) +
+      (grand.cash || 0) +
+      (grand.bank || 0) +
+      (grand.due || 0) +
+      (grand.tda || 0)
+    );
   }, [grand]);
 
   const num = (v) => (v ?? 0).toLocaleString();
 
-  const StatCard = ({ title, value, icon: Icon, accent = 'emerald' }) => (
+  const StatCard = ({ title, value, icon: Icon, accent = "emerald" }) => (
     <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all">
       <div className={`absolute inset-x-0 top-0 h-1 bg-${accent}-500`} />
       <div className="p-5">
@@ -245,7 +264,9 @@ export const Report = () => {
             <Icon className="w-5 h-5" />
           </div>
         </div>
-        <p className="mt-3 text-2xl font-bold tracking-tight text-gray-900">{num(value)}</p>
+        <p className="mt-3 text-2xl font-bold tracking-tight text-gray-900">
+          {num(value)}
+        </p>
       </div>
     </div>
   );
@@ -258,7 +279,9 @@ export const Report = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-black">Weekly Report</h1>
-              <p className="text-sm text-gray-600">Track weekly summary (Monday to Sunday)</p>
+              <p className="text-sm text-gray-600">
+                Track weekly summary (Monday to Sunday)
+              </p>
             </div>
           </div>
 
@@ -315,7 +338,12 @@ export const Report = () => {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg flex items-center space-x-3">
             <p className="text-red-700">{error}</p>
-            <button onClick={() => setError('')} className="ml-auto text-red-600 hover:text-red-800">✕</button>
+            <button
+              onClick={() => setError("")}
+              className="ml-auto text-red-600 hover:text-red-800"
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -328,14 +356,54 @@ export const Report = () => {
           <>
             {/* Primary KPIs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              <StatCard title="Total Payment" value={grand.paymentAmount} icon={IndianRupee} accent="blue" />
-              <StatCard title="Total PWT" value={grand.pwt} icon={TrendingUp} accent="indigo" />
-              <StatCard title="Total Cash" value={grand.cash} icon={Wallet} accent="emerald" />
-              <StatCard title="Total Bank" value={grand.bank} icon={Banknote} accent="teal" />
-              <StatCard title="Total Due" value={grand.due} icon={Calculator} accent="orange" />
-              <StatCard title="Total TDA" value={grand.tda} icon={PiggyBank} accent="cyan" />
-              <StatCard title="Combined Total" value={totalAllColumns} icon={Coins} accent="violet" />
-              <StatCard title="Expenses (Week)" value={-totalExpenses} icon={Receipt} accent="rose" />
+              <StatCard
+                title="Total Payment"
+                value={grand.paymentAmount}
+                icon={IndianRupee}
+                accent="blue"
+              />
+              <StatCard
+                title="Total PWT"
+                value={grand.pwt}
+                icon={TrendingUp}
+                accent="indigo"
+              />
+              <StatCard
+                title="Total Cash"
+                value={grand.cash}
+                icon={Wallet}
+                accent="emerald"
+              />
+              <StatCard
+                title="Total Bank"
+                value={grand.bank}
+                icon={Banknote}
+                accent="teal"
+              />
+              <StatCard
+                title="Total Due"
+                value={grand.due}
+                icon={Calculator}
+                accent="orange"
+              />
+              <StatCard
+                title="Total TDA"
+                value={grand.tda}
+                icon={PiggyBank}
+                accent="cyan"
+              />
+              <StatCard
+                title="Combined Total"
+                value={totalAllColumns}
+                icon={Coins}
+                accent="violet"
+              />
+              <StatCard
+                title="Expenses (Week)"
+                value={-totalExpenses}
+                icon={Receipt}
+                accent="rose"
+              />
             </div>
 
             {/* Final Cash */}
@@ -343,7 +411,9 @@ export const Report = () => {
               <div className="md:col-span-2">
                 <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 font-medium">Cash After Expenses</p>
+                    <p className="text-sm text-gray-500 font-medium">
+                      Cash After Expenses
+                    </p>
                     <div className="p-2 rounded-lg bg-green-50 text-green-600">
                       <Wallet className="w-5 h-5" />
                     </div>
@@ -357,11 +427,18 @@ export const Report = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="text-xs text-gray-500">NP counted in Payment only; excluded from Combined Total</p>
-                  <p className="mt-1 text-xs text-gray-400">Based on weekly NP adjustments</p>
+              <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4 shadow-sm">
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Weekly NP Amount
+                    </p>
+                  </div>
                 </div>
+                <p className="text-2xl font-bold text-amber-900 mb-1">
+                  ₹{num(grand.npAmount)}
+                </p>
               </div>
             </div>
           </>
