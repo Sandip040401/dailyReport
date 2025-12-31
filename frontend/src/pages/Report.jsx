@@ -228,7 +228,7 @@ export const Report = () => {
   const totalAllColumns = useMemo(() => {
     return (grand.pwt || 0)
       + (grand.cash || 0)
-      + ((grand.bank || 0) - (grand.npAmount || 0))
+      + (grand.bank || 0)
       + (grand.due || 0)
       + (grand.tda || 0);
   }, [grand]);
