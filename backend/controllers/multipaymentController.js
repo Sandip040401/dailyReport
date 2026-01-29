@@ -3,7 +3,7 @@ import MultiDayPayment from '../models/MultiDayPayment.js';
 
 const asDate = (d) => (d instanceof Date ? d : new Date(d));
 const isValid = (d) => d instanceof Date && !Number.isNaN(d.getTime());
-
+// controllers/multiDayPayment.controller.js
 export const bulkUpsertPayments = async (req, res) => {
   try {
     const { payments, weekStartDate, weekEndDate, weekNumber: wkNumOverride, weekYear: wkYrOverride } = req.body;
@@ -81,7 +81,7 @@ export const bulkUpsertPayments = async (req, res) => {
         // ✅ Fetch existing document to get current bankColorStatus values
         const existingDoc = await MultiDayPayment.findOne(filter).lean();
         
-        // ✅ Merge new data with existing bankColorStatus
+        // ✅ Merge new data with existing bankColorStatus + handle bank value changes
         const mergedRanges = paymentRanges.map(newRange => {
           // Find matching existing range by comparing dates
           const existingRange = existingDoc?.paymentRanges?.find(
@@ -89,22 +89,35 @@ export const bulkUpsertPayments = async (req, res) => {
               && r.endDate.getTime() === newRange.endDate.getTime()
           );
           
-          // Preserve bankColorStatus from database if it exists
-          if (existingRange?.bankColorStatus) {
-            return {
-              ...newRange,
-              bankColorStatus: existingRange.bankColorStatus
-            };
+          // ✅ NEW LOGIC: Check if bank value changed and color is green
+          if (existingRange) {
+            const bankChanged = existingRange.bank !== newRange.bank;
+            const isCurrentlyGreen = existingRange.bankColorStatus === 'green';
+            
+            if (bankChanged && isCurrentlyGreen) {
+              // Change green to red when bank value changes
+              return {
+                ...newRange,
+                bankColorStatus: 'red'
+              };
+            } else if (existingRange.bankColorStatus) {
+              // Preserve existing color if bank didn't change
+              return {
+                ...newRange,
+                bankColorStatus: existingRange.bankColorStatus
+              };
+            }
           }
           
-          return newRange;
+          // Default to red for new ranges
+          return { ...newRange, bankColorStatus: 'red' };
         });
         
         const update = {
           $set: {
             weekStartDate: ws,
             weekEndDate: we,
-            paymentRanges: mergedRanges, // ✅ Use merged ranges with preserved colors
+            paymentRanges: mergedRanges,
             weeklyNP,
             updatedAt: new Date(),
           },
@@ -139,7 +152,6 @@ export const bulkUpsertPayments = async (req, res) => {
     });
   }
 };
-
 
 
 

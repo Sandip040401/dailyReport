@@ -9,6 +9,7 @@ import WeeklyPayment from "../models/WeeklyPayment.js";
 
 // controllers/paymentController.js
 
+// controllers/weeklyPayment.controller.js
 export const bulkUpsertPayments = async (req, res) => {
   try {
     const body = req.body?.payments?.payments ? req.body.payments : req.body;
@@ -20,14 +21,13 @@ export const bulkUpsertPayments = async (req, res) => {
         .json({ success: false, message: "Payments array is required" });
     }
 
-    // Week meta based on weekStartDate
     const start = new Date(weekStartDate);
     const weekYear = start.getFullYear();
     const weekNumber = Math.ceil(
       ((start - new Date(weekYear, 0, 1)) / 86400000 + start.getDay() + 1) / 7
     );
 
-    // ✅ Fetch existing documents first to preserve bankColorStatus
+    // ✅ Fetch existing documents first to preserve and conditionally update bankColorStatus
     const partyIds = [...new Set(payments.map(p => p.party || p.partyId).filter(Boolean))];
     const existingDocs = await WeeklyPayment.find({
       party: { $in: partyIds },
@@ -89,12 +89,28 @@ export const bulkUpsertPayments = async (req, res) => {
         }
       }
 
-      // ✅ Preserve existing bankColorStatus if it exists
+      // ✅ Handle bankColorStatus logic
       const existingDoc = existingByParty[partyId];
       const existingPayment = existingDoc?.payments?.get?.(dateKey) || existingDoc?.payments?.[dateKey];
       
-      if (existingPayment?.bankColorStatus) {
-        setMap[`payments.${dateKey}.bankColorStatus`] = existingPayment.bankColorStatus;
+      if (existingPayment) {
+        const newBankValue = p.bank;
+        const oldBankValue = existingPayment.bank;
+        const currentColorStatus = existingPayment.bankColorStatus;
+        
+        // ✅ NEW LOGIC: If bank value changed and color is green, change to red
+        if (typeof newBankValue === 'number' && 
+            !Number.isNaN(newBankValue) && 
+            oldBankValue !== newBankValue && 
+            currentColorStatus === 'green') {
+          setMap[`payments.${dateKey}.bankColorStatus`] = 'red';
+        } else if (currentColorStatus) {
+          // Preserve existing color if bank didn't change
+          setMap[`payments.${dateKey}.bankColorStatus`] = currentColorStatus;
+        }
+      } else {
+        // Default to red for new payments
+        setMap[`payments.${dateKey}.bankColorStatus`] = 'red';
       }
 
       // Weekly NP as dot paths (no parent in $set)
