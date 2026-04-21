@@ -53,7 +53,7 @@ const formatWeekRange = (startYmd, endYmd) => {
   const opts = { day: "2-digit", month: "short", year: "numeric" };
   return `${start.toLocaleDateString("en-IN", opts)} - ${end.toLocaleDateString(
     "en-IN",
-    opts
+    opts,
   )}`;
 };
 
@@ -235,7 +235,7 @@ const WeekRangeSelector = ({ selectedWeekStart, onWeekChange }) => {
 export default function MultiDayPaymentsPage() {
   // Selected week state (defaults to current week)
   const [selectedWeekStart, setSelectedWeekStart] = useState(() =>
-    getWeekStart(new Date())
+    getWeekStart(new Date()),
   );
   const selectedWeekEnd = getWeekEnd(selectedWeekStart);
 
@@ -301,7 +301,9 @@ export default function MultiDayPaymentsPage() {
       try {
         setLoading(true);
         const res = await partyAPI.getMultiDayParties();
-        setParties(res.data || []);
+        setParties(
+          (res.data || []).filter((party) => party.isActive !== false),
+        ); // ← add filter
       } catch {
         setError("Failed to load parties");
       } finally {
@@ -371,7 +373,7 @@ export default function MultiDayPaymentsPage() {
           }
 
           map[partyId] = rows.sort((a, b) =>
-            a.startDate < b.startDate ? -1 : 1
+            a.startDate < b.startDate ? -1 : 1,
           );
           npMap[partyId] = np;
         }
@@ -680,8 +682,8 @@ export default function MultiDayPaymentsPage() {
       setError(
         `Start date must be within selected week (${formatWeekRange(
           selectedWeekStart,
-          selectedWeekEnd
-        )})`
+          selectedWeekEnd,
+        )})`,
       );
       return;
     }
@@ -689,8 +691,8 @@ export default function MultiDayPaymentsPage() {
       setError(
         `End date must be within selected week (${formatWeekRange(
           selectedWeekStart,
-          selectedWeekEnd
-        )})`
+          selectedWeekEnd,
+        )})`,
       );
       return;
     }
@@ -707,7 +709,7 @@ export default function MultiDayPaymentsPage() {
 
     setRowsByParty((prev) => {
       const list = (prev[partyId] || []).map((r) =>
-        r.id === rowId ? { ...r, ...next } : r
+        r.id === rowId ? { ...r, ...next } : r,
       );
       return { ...prev, [partyId]: list };
     });
@@ -785,8 +787,8 @@ export default function MultiDayPaymentsPage() {
       setSuccess(
         `✓ Saved ${payloadItems.length} record(s) for ${formatWeekRange(
           weekStartDate,
-          weekEndDate
-        )}`
+          weekEndDate,
+        )}`,
       );
       setModifiedRows({});
       setEditingCell(null);
@@ -841,7 +843,7 @@ export default function MultiDayPaymentsPage() {
           }
         }
         refreshed[pid] = rows.sort((a, b) =>
-          a.startDate < b.startDate ? -1 : 1
+          a.startDate < b.startDate ? -1 : 1,
         );
         npRefreshed[pid] = np;
       }
@@ -873,7 +875,7 @@ export default function MultiDayPaymentsPage() {
           acc.atd += Number(f.atd || 0);
           return acc;
         },
-        { amount: 0, pwt: 0, cash: 0, bank: 0, due: 0, atd: 0 }
+        { amount: 0, pwt: 0, cash: 0, bank: 0, due: 0, atd: 0 },
       );
       const np = weeklyNPByParty[pid]?.amount || 0;
       out[pid] = { ...partyTotal, amountWithNP: partyTotal.amount + np, np };
@@ -910,7 +912,7 @@ export default function MultiDayPaymentsPage() {
     isCurrentCell,
     row,
     partyId,
-    globalRowIndex
+    globalRowIndex,
   ) => {
     const fieldName = cellOrder[colIndex];
     const modKey = `${partyId}-${row.id}`;
@@ -998,7 +1000,7 @@ export default function MultiDayPaymentsPage() {
                 saving ||
                 (Object.keys(modifiedRows).length === 0 &&
                   !Object.values(weeklyNPByParty).some(
-                    (v) => typeof v?.amount === "number" && v.amount > 0
+                    (v) => typeof v?.amount === "number" && v.amount > 0,
                   ))
               }
               className="flex items-center space-x-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors shadow-lg"
@@ -1017,7 +1019,7 @@ export default function MultiDayPaymentsPage() {
                       const count =
                         Object.keys(modifiedRows).length +
                         Object.values(weeklyNPByParty).filter(
-                          (i) => typeof i?.amount === "number" && i.amount > 0
+                          (i) => typeof i?.amount === "number" && i.amount > 0,
                         ).length;
                       return count > 0 ? ` (${count})` : "";
                     })()}
@@ -1061,7 +1063,7 @@ export default function MultiDayPaymentsPage() {
                   <tbody>
                     {selectedParties.map((partyId, pIndex) => {
                       const partyCode = parties.find(
-                        (p) => p._id === partyId
+                        (p) => p._id === partyId,
                       )?.partyCode;
                       const rows = rowsByParty[partyId] || [];
                       const totals = totalsByParty[partyId] || {
@@ -1116,7 +1118,7 @@ export default function MultiDayPaymentsPage() {
                           {rows.map((row) => {
                             const globalIndex = tableRows.findIndex(
                               (t) =>
-                                t.partyId === partyId && t.row.id === row.id
+                                t.partyId === partyId && t.row.id === row.id,
                             );
                             const modKey = `${partyId}-${row.id}`;
                             const modified = modifiedRows[modKey]?.fields;
@@ -1142,8 +1144,8 @@ export default function MultiDayPaymentsPage() {
                                   isEditing
                                     ? "bg-emerald-50"
                                     : isCurrentRow
-                                    ? "bg-blue-50"
-                                    : "hover:bg-gray-50"
+                                      ? "bg-blue-50"
+                                      : "hover:bg-gray-50"
                                 }`}
                               >
                                 <td className="border border-gray-500 px-4 py-2">
@@ -1184,7 +1186,7 @@ export default function MultiDayPaymentsPage() {
                                             ).map((r) =>
                                               r.id === row.id
                                                 ? { ...r, editingDate: false }
-                                                : r
+                                                : r,
                                             ),
                                           }))
                                         }
@@ -1202,7 +1204,7 @@ export default function MultiDayPaymentsPage() {
                                             (r) =>
                                               r.id === row.id
                                                 ? { ...r, editingDate: true }
-                                                : r
+                                                : r,
                                           ),
                                         }))
                                       }
@@ -1230,8 +1232,8 @@ export default function MultiDayPaymentsPage() {
                                     isCurrentRow && currentCol === colIndex,
                                     row,
                                     partyId,
-                                    globalIndex
-                                  )
+                                    globalIndex,
+                                  ),
                                 )}
 
                                 <td className="border border-gray-500 px-4 py-2 text-right bg-gray-50">
@@ -1344,7 +1346,7 @@ export default function MultiDayPaymentsPage() {
                             <td className="border border-gray-500 px-4 py-3 text-left text-md text-emerald-700"></td>
                             <td className="border border-gray-500 px-4 py-3 text-right text-gray-900">
                               {Number(
-                                totals.amountWithNP || 0
+                                totals.amountWithNP || 0,
                               ).toLocaleString()}
                             </td>
                             <td className="border border-gray-500 px-4 py-3 text-right text-gray-900">

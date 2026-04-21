@@ -121,15 +121,15 @@ export default function DailyPaymentsPage() {
     }
   }, [error]);
 
-  const fetchParties = async () => {
-    try {
-      const response = await partyAPI.getDailyParties();
-      setParties(response.data);
-    } catch (error) {
-      console.error("Error fetching parties:", error);
-      setError("Failed to load parties");
-    }
-  };
+const fetchParties = async () => {
+  try {
+    const response = await partyAPI.getDailyParties();
+    setParties((response.data || []).filter(party => party.isActive !== false)); // ← add filter
+  } catch (error) {
+    console.error("Error fetching parties:", error);
+    setError("Failed to load parties");
+  }
+};
 
   const fetchAllPayments = async () => {
     try {
