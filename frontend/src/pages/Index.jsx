@@ -9,7 +9,14 @@ import { getIsoWeekBoundsFromDate } from '../utils/weekRange';
 import { dashboardAPI, expenseAPI } from '../lib/api';
 import Loader from '../components/Loader';
 
-const toISO = (d) => d.toISOString().slice(0, 10);
+const toLocalYMD = (d) => {
+  if (!d) return '';
+  const dateObj = new Date(d);
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function Index() {
   const [pickedDate, setPickedDate] = useState(new Date());
@@ -30,9 +37,12 @@ export default function Index() {
       setLoading(true);
       setError('');
       
+      const startStr = toLocalYMD(weekStart);
+      const endStr = toLocalYMD(weekEnd);
+
       const [paymentsRes, expensesRes] = await Promise.all([
-        dashboardAPI.getRangeSummary(weekStart, weekEnd),
-        expenseAPI.getExpenses({ startDate: weekStart, endDate: weekEnd })
+        dashboardAPI.getRangeSummary(startStr, endStr),
+        expenseAPI.getExpenses({ startDate: startStr, endDate: endStr })
       ]);
 
       if (paymentsRes?.success) {
@@ -49,21 +59,16 @@ export default function Index() {
                   const dates = payment.date.split(/\s*[-–]\s*(?=\d{4})/);
                   const dateStr = dates[0];
                   
-                  // Parse all dates
-                  const paymentDate = new Date(dateStr);
-                  const weekStartDate = new Date(weekStart);
-                  const weekEndDate = new Date(weekEnd);
+                  // Extract date components without timezone shift
+                  const [py, pm, pd] = dateStr.split('-').map(Number);
+                  const paymentDay = py * 10000 + (pm - 1) * 100 + pd;
                   
-                  // Compare ONLY year, month, day (ignore time completely)
-                  const paymentDay = paymentDate.getFullYear() * 10000 + 
-                                    paymentDate.getMonth() * 100 + 
-                                    paymentDate.getDate();
-                  const startDay = weekStartDate.getFullYear() * 10000 + 
-                                  weekStartDate.getMonth() * 100 + 
-                                  weekStartDate.getDate();
-                  const endDay = weekEndDate.getFullYear() * 10000 + 
-                                weekEndDate.getMonth() * 100 + 
-                                weekEndDate.getDate();
+                  const startDay = weekStart.getFullYear() * 10000 + 
+                                  weekStart.getMonth() * 100 + 
+                                  weekStart.getDate();
+                  const endDay = weekEnd.getFullYear() * 10000 + 
+                                weekEnd.getMonth() * 100 + 
+                                weekEnd.getDate();
                   
                   return paymentDay >= startDay && paymentDay <= endDay;
                 })
