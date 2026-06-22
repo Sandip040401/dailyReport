@@ -22,8 +22,8 @@ export const getRangeSummary = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    start.setUTCHours(0, 0, 0, 0);
+    end.setUTCHours(23, 59, 59, 999);
 
     // Fetch docs overlapping with the range
     const [weeklyDocs, multiDayDocs] = await Promise.all([
