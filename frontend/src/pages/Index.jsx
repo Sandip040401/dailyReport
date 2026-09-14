@@ -28,8 +28,8 @@ export default function Index() {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [bankTotals, setBankTotals] = useState({ greenBankTotal: 0, redBankTotal: 0 });
 
   // Extract fetch logic into reusable function
   const fetchWeekData = async () => {
@@ -148,7 +148,26 @@ export default function Index() {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-start md:justify-end gap-3">
+            <div className="flex items-center justify-start md:justify-end gap-2.5 flex-wrap">
+              {/* Total Bank Badges (Green & Red) */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg shadow-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-semibold text-emerald-700">Bank (Green):</span>
+                  <span className="text-sm font-bold text-emerald-800">
+                    ₹{(bankTotals.greenBankTotal || 0).toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-300 rounded-lg shadow-sm">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                  <span className="text-xs font-semibold text-red-700">Bank (Red):</span>
+                  <span className="text-sm font-bold text-red-800">
+                    ₹{(bankTotals.redBankTotal || 0).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={() => jumpByDays(-7)}
                 className="px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
@@ -186,6 +205,7 @@ export default function Index() {
             data={weeklyData} 
             expenses={expenses}
             onDataUpdate={fetchWeekData}
+            onBankTotalsChange={setBankTotals}
           /> 
         )}
       </div>

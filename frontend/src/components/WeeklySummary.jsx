@@ -5,7 +5,7 @@ import Loader from "./Loader";
 
 const num = (v) => (v ?? 0).toLocaleString();
 
-export default function WeeklySummary({ data, expenses = [] }) {
+export default function WeeklySummary({ data, expenses = [], onBankTotalsChange }) {
   const [bankCellColors, setBankCellColors] = useState({});
   const [userRole, setUserRole] = useState("employee");
   const [isLoading, setIsLoading] = useState(true);
@@ -183,6 +183,35 @@ console.log(data);
     if (!grandTotal) return 0;
     return grandTotal.cash - totalExpenses;
   }, [grandTotal, totalExpenses]);
+
+  // Calculate total Green and Red Bank amounts for displayed payments
+  const { greenBankTotal, redBankTotal } = useMemo(() => {
+    let green = 0;
+    let red = 0;
+    if (data?.parties) {
+      data.parties.forEach((party) => {
+        party.payments?.forEach((payment, idx) => {
+          const amt = payment.bank || 0;
+          if (amt > 0) {
+            const key = `${party.partyId}-${idx}`;
+            const color = bankCellColors[key] || payment.bankColorStatus || "red";
+            if (color === "green") {
+              green += amt;
+            } else {
+              red += amt;
+            }
+          }
+        });
+      });
+    }
+    return { greenBankTotal: green, redBankTotal: red };
+  }, [data, bankCellColors]);
+
+  useEffect(() => {
+    if (onBankTotalsChange) {
+      onBankTotalsChange({ greenBankTotal, redBankTotal });
+    }
+  }, [greenBankTotal, redBankTotal, onBankTotalsChange]);
 
   const weekNumber = data?.weekNumber;
   const weekYear = data?.weekYear;
