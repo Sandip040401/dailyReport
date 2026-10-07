@@ -16,6 +16,7 @@ import bankColorRoutes from './routes/bankColorRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import commissionRoutes from './routes/commissionRoutes.js';
 
+
 // Load environment variables
 dotenv.config();
 
@@ -28,7 +29,7 @@ const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173' || 'http://localhost:5174',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173' || 'http://localhost:5174' || 'https://daily.dearportel.in',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -49,6 +50,11 @@ const connectDB = async () => {
 };
 
 connectDB();
+
+
+// Serve static files from frontend
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
@@ -83,7 +89,7 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err);
-  
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
