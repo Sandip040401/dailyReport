@@ -27,12 +27,23 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/paymen
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+// Standard Middlewares
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://daily.dearportel.in'
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173' || 'http://localhost:5174' || 'https://daily.dearportel.in',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
@@ -51,10 +62,8 @@ const connectDB = async () => {
 
 connectDB();
 
-
 // Serve static files from frontend
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
@@ -76,27 +85,9 @@ app.use('/api/bank-color', bankColorRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/commissions', commissionRoutes);
 
-// Serve frontend index.html for all non-API routes (SPA client-side routing)
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({
-      success: false,
-      message: 'API route not found',
-      path: req.path,
-      method: req.method
-    });
-  }
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
-
-// 404 Handler for non-GET unhandled requests
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-    path: req.path,
-    method: req.method
-  });
+// Fallback for SPA (Must be AFTER API routes)
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // Global Error Handler
