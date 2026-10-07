@@ -14,6 +14,7 @@ import multiDayPaymentRoutes from './routes/multipaymentRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import bankColorRoutes from './routes/bankColorRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import commissionRoutes from './routes/commissionRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/api/parties', partyRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/bank-color', bankColorRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/commissions', commissionRoutes);
 
 // 404 Handler
 app.use((req, res) => {

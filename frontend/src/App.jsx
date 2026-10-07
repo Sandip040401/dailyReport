@@ -6,6 +6,7 @@ import Index from "./pages/Index";
 import DailyPaymentsPage from "./pages/DailyPaymentsPage";
 import MultiDayPaymentsPage from "./pages/MultiDayPaymentsPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import CommissionPage from "./pages/CommissionPage";
 import PartiesPage from "./pages/PartiesPage";
 import Login from "./pages/Login";
 import { Report } from "./pages/Report";
@@ -38,6 +39,7 @@ function App() {
           <Route path="/daily-payments" element={<DailyPaymentsPage />} />
           <Route path="/multi-day-payments" element={<MultiDayPaymentsPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/commission" element={<CommissionPage />} />
           <Route path="/parties" element={<PartiesPage />} />
           <Route path="/reports" element={<Report />} />
         </Route>

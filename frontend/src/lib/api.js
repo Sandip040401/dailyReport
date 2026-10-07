@@ -68,6 +68,17 @@ export const expenseAPI = {
   deleteExpense: (id) => apiClient.delete(`/expenses/${id}`)
 };
 
+// ==================== COMMISSION APIS ====================
+
+export const commissionAPI = {
+  createCommission: (data) => apiClient.post('/commissions', data),
+  bulkUpsertCommissions: (data) => apiClient.post('/commissions/bulk-upsert', data),
+  getCommissions: (params) => apiClient.get('/commissions', { params }),
+  updateCommission: (id, data) => apiClient.patch(`/commissions/${id}`, data),
+  togglePaid: (id) => apiClient.patch(`/commissions/${id}/toggle-paid`),
+  deleteCommission: (id) => apiClient.delete(`/commissions/${id}`)
+};
+
 export const dashboardAPI = {
   getRangeSummary: (startDate, endDate) =>
     apiClient.get('/dashboard/summary', { params: { startDate, endDate } })

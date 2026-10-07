@@ -1,12 +1,28 @@
-// src/components/Layout.jsx
 import React, { useState, useEffect } from 'react';
-import { Menu, X, BookMinus, LogOut, Settings, Home, Users, BarChart3, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-
+import { Menu, X, BookMinus, LogOut, Settings, Home, Users, BarChart3, AlertCircle, ChevronLeft, ChevronRight, Percent } from 'lucide-react';
+import { useLocation, Link } from 'react-router-dom';
+import { authAPI } from '../lib/api';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState('employee');
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const token = localStorage.getItem('payment-token');
+      if (!token) return;
+      try {
+        const res = await authAPI.role(token);
+        if (res?.role) {
+          setUserRole(res.role);
+        }
+      } catch (err) {
+        console.error('Error fetching role in Layout:', err);
+      }
+    };
+    fetchRole();
+  }, []);
 
   // Handle responsive sidebar state
   useEffect(() => {
@@ -38,9 +54,10 @@ export default function Layout({ children }) {
     { path: '/daily-payments', label: 'Daily Payments', icon: BarChart3 },
     { path: '/multi-day-payments', label: 'Multi-Day Payments', icon: AlertCircle },
     { path: '/expenses', label: 'Expenses', icon: AlertCircle },
+    { path: '/commission', label: 'Commission', icon: Percent, adminOnly: true },
     { path: '/parties', label: 'Parties', icon: Users },
     { path: '/reports', label: 'Reports', icon: BookMinus }
-  ];
+  ].filter((item) => !item.adminOnly || userRole === 'admin');
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
