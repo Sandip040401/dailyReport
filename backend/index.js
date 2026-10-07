@@ -76,7 +76,20 @@ app.use('/api/bank-color', bankColorRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/commissions', commissionRoutes);
 
-// 404 Handler
+// Serve frontend index.html for all non-API routes (SPA client-side routing)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({
+      success: false,
+      message: 'API route not found',
+      path: req.path,
+      method: req.method
+    });
+  }
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
+// 404 Handler for non-GET unhandled requests
 app.use((req, res) => {
   res.status(404).json({
     success: false,
