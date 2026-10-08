@@ -1,9 +1,7 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../lib/api';
-import { use } from 'react';
-import { useEffect } from 'react';
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -13,13 +11,20 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    const sessionExpiredMsg = sessionStorage.getItem('auth-message');
+    if (searchParams.get('sessionExpired') === 'true' || sessionExpiredMsg) {
+      setError(sessionExpiredMsg || 'Session expired. Please login again.');
+      sessionStorage.removeItem('auth-message');
+    }
+
     const token = localStorage.getItem('payment-token');
     if (token) {
       navigate('/user');
     }
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

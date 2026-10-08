@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, BookMinus, LogOut, Settings, Home, Users, BarChart3, AlertCircle, ChevronLeft, ChevronRight, Percent } from 'lucide-react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../lib/api';
+import SessionExpiredModal from './SessionExpiredModal';
 
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState('employee');
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setIsSessionExpired(true);
+    };
+
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
+  }, []);
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -202,6 +214,16 @@ export default function Layout({ children }) {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Session Expired Modal */}
+      <SessionExpiredModal
+        isOpen={isSessionExpired}
+        onLogin={() => {
+          setIsSessionExpired(false);
+          localStorage.removeItem('payment-token');
+          navigate('/');
+        }}
+      />
     </div>
   );
 }

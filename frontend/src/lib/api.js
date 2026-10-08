@@ -28,9 +28,12 @@ apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // localStorage.removeItem('payment-token');
-      // window.location.href = '/';
-      return
+      localStorage.removeItem('payment-token');
+      // Dispatch custom event so the UI can pop up the Session Expired modal
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('session-expired'));
+      }
+      return Promise.reject(new Error('Session expired. Please login again.'));
     }
     return Promise.reject(error.response?.data || error.message);
   }
