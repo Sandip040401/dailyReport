@@ -17,6 +17,10 @@ const partySchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  atd: {
+    type: Number,
+    default: 0
+  },
   lastUpdated: {
     type: Date,
     default: Date.now

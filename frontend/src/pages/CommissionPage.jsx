@@ -78,6 +78,9 @@ export default function CommissionPage() {
   const [userRole, setUserRole] = useState("employee");
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+  const [partyAtdValues, setPartyAtdValues] = useState({});
+  const [savingAtd, setSavingAtd] = useState({});
+
   const [editingCell, setEditingCell] = useState(null); // { partyId, rowId, field }
   const [currentRow, setCurrentRow] = useState(0);
   const [currentCol, setCurrentCol] = useState(0);
@@ -122,9 +125,60 @@ export default function CommissionPage() {
         (p) => p.isActive !== false
       );
       setParties(activeParties);
+      const atdMap = {};
+      activeParties.forEach((p) => {
+        atdMap[p._id] = p.atd !== undefined && p.atd !== null ? p.atd : "";
+      });
+      setPartyAtdValues(atdMap);
     } catch (e) {
       console.error("Error fetching parties:", e);
       setError("Failed to load parties");
+    }
+  };
+
+  const handleAtdChange = (partyId, val) => {
+    setPartyAtdValues((prev) => ({
+      ...prev,
+      [partyId]: val,
+    }));
+  };
+
+  const handleSaveAtd = async (partyId) => {
+    const rawVal = partyAtdValues[partyId];
+    const numVal = rawVal === "" || isNaN(Number(rawVal)) ? 0 : Number(rawVal);
+    try {
+      setSavingAtd((prev) => ({ ...prev, [partyId]: true }));
+      await partyAPI.updateParty(partyId, { atd: numVal });
+      setParties((prev) =>
+        prev.map((p) => (p._id === partyId ? { ...p, atd: numVal } : p))
+      );
+      setPartyAtdValues((prev) => ({ ...prev, [partyId]: numVal }));
+      setSuccess("Party ATD saved successfully");
+    } catch (err) {
+      console.error("Error saving ATD:", err);
+      setError("Failed to save Party ATD");
+    } finally {
+      setSavingAtd((prev) => ({ ...prev, [partyId]: false }));
+    }
+  };
+
+  const handleDeleteAtd = async (partyId) => {
+    if (!window.confirm("Are you sure you want to delete/clear ATD for this party?")) {
+      return;
+    }
+    try {
+      setSavingAtd((prev) => ({ ...prev, [partyId]: true }));
+      await partyAPI.updateParty(partyId, { atd: 0 });
+      setParties((prev) =>
+        prev.map((p) => (p._id === partyId ? { ...p, atd: 0 } : p))
+      );
+      setPartyAtdValues((prev) => ({ ...prev, [partyId]: "" }));
+      setSuccess("Party ATD deleted successfully");
+    } catch (err) {
+      console.error("Error deleting ATD:", err);
+      setError("Failed to delete Party ATD");
+    } finally {
+      setSavingAtd((prev) => ({ ...prev, [partyId]: false }));
     }
   };
 
@@ -207,9 +261,9 @@ export default function CommissionPage() {
   const handlePartyToggle = (partyId) => {
     setSelectedParties((prev) => {
       if (prev.includes(partyId)) {
-        return prev.filter((id) => id !== partyId);
+        return [];
       }
-      return [...prev, partyId];
+      return [partyId];
     });
     setCurrentRow(0);
     setCurrentCol(0);
@@ -857,7 +911,82 @@ export default function CommissionPage() {
 
       {/* Main Content - Table */}
       {selectedParties.length > 0 ? (
-        <div className="max-w-full mx-auto px-6 py-8">
+        <div className="max-w-full mx-auto px-6 py-8 space-y-4">
+          {/* ATD Row for Selected Party */}
+          {selectedParties.map((partyId) => {
+            const party = parties.find((p) => p._id === partyId);
+            const partyCode = party?.partyCode || "";
+            const currentAtd = partyAtdValues[partyId] ?? "";
+            const isSavingThisAtd = Boolean(savingAtd[partyId]);
+
+            return (
+              <div
+                key={`atd-${partyId}`}
+                className="flex items-center justify-between bg-white border-2 border-emerald-500 rounded-xl px-6 py-3 shadow-md"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                      Party:
+                    </span>
+                    <span className="text-md font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                      {partyCode}
+                    </span>
+                  </div>
+                  <div className="h-5 w-[1px] bg-gray-300"></div>
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor={`atd-input-${partyId}`}
+                      className="text-sm font-bold text-gray-800 uppercase tracking-wide"
+                    >
+                      ATD:
+                    </label>
+                    <input
+                      id={`atd-input-${partyId}`}
+                      type="number"
+                      step="any"
+                      placeholder="0"
+                      value={currentAtd}
+                      onChange={(e) => handleAtdChange(partyId, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSaveAtd(partyId);
+                        }
+                      }}
+                      className="w-36 px-3 py-1.5 border-2 border-gray-300 focus:border-emerald-500 rounded-lg text-md font-semibold text-right text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveAtd(partyId)}
+                    disabled={isSavingThisAtd}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-bold transition-all shadow-sm"
+                  >
+                    {isSavingThisAtd ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>Save ATD</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAtd(partyId)}
+                    disabled={isSavingThisAtd || (currentAtd === "" && !party?.atd)}
+                    className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-lg transition-colors shadow-sm"
+                    title="Delete / Clear ATD"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
           <div className="bg-white border border-gray-500 rounded-xl overflow-hidden shadow-lg">
             {loading ? (
               <div className="p-12 text-center">

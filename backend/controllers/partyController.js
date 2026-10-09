@@ -57,7 +57,7 @@ export const createParty = async (req, res) => {
 export const updateParty = async (req, res) => {
   try {
     const { id } = req.params;
-    const { partyName, partyCode, partyType } = req.body;
+    const { partyName, partyCode, partyType, atd } = req.body;
 
     // Validate partyType if provided
     if (partyType && !['daily', 'multiday'].includes(partyType.toLowerCase())) {
@@ -68,11 +68,12 @@ export const updateParty = async (req, res) => {
     }
 
     const updateData = {
-      partyName,
-      partyCode: partyCode.toUpperCase(),
       lastUpdated: Date.now()
     };
 
+    if (partyName) updateData.partyName = partyName;
+    if (partyCode) updateData.partyCode = partyCode.toUpperCase();
+    if (atd !== undefined) updateData.atd = Number(atd) || 0;
     if (partyType) {
       updateData.partyType = partyType.toLowerCase();
     }
